@@ -1,0 +1,152 @@
+{
+  "layoutId": "original",
+  "theme": {
+    "ink": "#2b1810",
+    "paper": "#f5ede4",
+    "line": "#3d2418",
+    "muted": "#8a7361",
+    "accent": "#c1652f",
+    "displayFont": "Didot, \"Bodoni MT\", \"Playfair Display\", serif",
+    "bodyFont": "Futura, \"Century Gothic\", sans-serif"
+  },
+  "blocks": [
+    {
+      "type": "cover",
+      "data": {
+        "title": "JULIA BOTTONS",
+        "meta": [
+          "coleccion ",
+          "2026",
+          "MAWOA"
+        ],
+        "subtitle": "our fave trend",
+        "bottomLine1": "JULIA BOTONES · 2026",
+        "bottomLine2": "bikinis handmade.",
+        "bgImage": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/julia-botones-20260802-6303c0fc.webp",
+        "pageNumber": 1
+      }
+    },
+    {
+      "type": "manifesto",
+      "data": {
+        "heading": "DESIGNED TO BE SEEN",
+        "paragraph": "Every piece in this collection is built on contrast — bold silhouettes, rich textures, and details made to turn heads. This is fashion with intention, made for the moments that matter.",
+        "bgImage": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/julia-botones-20260802-e2dfdc86.webp",
+        "pageNumber": 2
+      }
+    },
+    {
+      "type": "chapterHero",
+      "data": {
+        "id": "new-in",
+        "pageNumber": 3,
+        "name": "JULIA BOTONES",
+        "label": "NEW IN ",
+        "bgImage": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/julia-botones-20260802-f8b43d3d.webp"
+      }
+    },
+    {
+      "type": "productDetail",
+      "data": {
+        "id": "",
+        "pageNumber": 4,
+        "name": "JULIA BOTONES",
+        "type": "negro",
+        "price": "S/ 70.00",
+        "description": [
+          "BOLD SILHOUETTE | STATEMENT DETAIL SIGNATURE COLOURWAY"
+        ],
+        "collageLayout": "two",
+        "collageImages": [
+          {
+            "src": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/catalogo-20260802-40741e30.webp",
+            "alt": "negro"
+          },
+          {
+            "src": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/catalogo-20260802-33e96f35.webp",
+            "alt": "negro"
+          }
+        ],
+        "swatches": [
+          {
+            "label": "negro",
+            "type": "color",
+            "color": "#1b1b24"
+          }
+        ]
+      }
+    },
+    {
+      "type": "productDetail",
+      "data": {
+        "id": "new-in",
+        "pageNumber": 5,
+        "name": "JULIA BOTONES",
+        "type": "VERDE",
+        "price": "S/ 70.00",
+        "description": [
+          "BOLD SILHOUETTE | STATEMENT DETAIL SIGNATURE COLOURWAY"
+        ],
+        "collageLayout": "two",
+        "collageImages": [
+          {
+            "src": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/catalogo-20260802-608bf9c3.webp",
+            "alt": "JULIA BOTONES Colorway 1"
+          },
+          {
+            "src": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/catalogo-20260802-2dce06af.webp",
+            "alt": "JULIA BOTONES Colorway 1"
+          }
+        ],
+        "swatches": [
+          {
+            "label": "VERDE",
+            "type": "color",
+            "color": "#a18c34"
+          }
+        ]
+      }
+    },
+    {
+      "type": "productDetail",
+      "data": {
+        "id": "",
+        "pageNumber": 6,
+        "name": "julia botones ",
+        "type": "beige",
+        "price": "s/ 70.00",
+        "description": [
+          "BOLD SILHOUETTE | STATEMENT DETAIL SIGNATURE COLOURWAY"
+        ],
+        "collageLayout": "two",
+        "collageImages": [
+          {
+            "src": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/catalogo-20260802-6c2dc40a.webp",
+            "alt": ""
+          },
+          {
+            "src": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/catalogo-20260802-d2ef38b5.webp",
+            "alt": ""
+          }
+        ],
+        "swatches": [
+          {
+            "label": "beige",
+            "type": "color",
+            "color": "#f2e4d8"
+          }
+        ]
+      }
+    },
+    {
+      "type": "closing",
+      "data": {
+        "title": "JULIA BOTONES",
+        "line1": "THE COLLECTION",
+        "line2": "Available now.",
+        "bgImage": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/julia-botones-20260802-6303c0fc.webp",
+        "pageNumber": 7
+      }
+    }
+  ]
+}
