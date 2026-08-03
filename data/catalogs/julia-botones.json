@@ -2,10 +2,10 @@
   "layoutId": "original",
   "theme": {
     "ink": "#2b1810",
-    "paper": "#f5ede4",
+    "paper": "#fff8f0",
     "line": "#3d2418",
     "muted": "#8a7361",
-    "accent": "#c1652f",
+    "accent": "#6a3e25",
     "displayFont": "Didot, \"Bodoni MT\", \"Playfair Display\", serif",
     "bodyFont": "Futura, \"Century Gothic\", sans-serif"
   },
@@ -102,7 +102,8 @@
           {
             "label": "VERDE",
             "type": "color",
-            "color": "#a18c34"
+            "color": "#a18c34",
+            "soldOut": true
           }
         ]
       }
