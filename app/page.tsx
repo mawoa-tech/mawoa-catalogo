@@ -1,7 +1,30 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
+import CatalogWall from "@/components/index/CatalogWall";
 import { catalogs } from "@/data/catalogs";
+import { getBackdropColumns } from "@/lib/indexBackdrop";
 import type { Block, CatalogBlocks } from "@/data/schema";
+
+/**
+ * Título de la portada del índice. Es una variable de entorno y no un
+ * texto fijo porque este mismo código se despliega en más de un sitio
+ * (cada uno con su propia marca): el que la define muestra su nombre,
+ * el que no, "Catálogos" a secas. Así los repos no arrastran una línea
+ * distinta para siempre, que sería un conflicto en cada sincronización.
+ *
+ * Server component + página estática: el valor se resuelve en build
+ * time, así que no hace falta NEXT_PUBLIC_ (no viaja al navegador como
+ * variable, solo el texto ya renderizado).
+ */
+const SITE_TITLE = process.env.SITE_TITLE?.trim() || "Catálogos";
+
+// `absolute` y no el título a secas: el template del layout es
+// "Catálogo Digital — %s", que acá daría "Catálogo Digital — Catálogos
+// Mawoa".
+export const metadata: Metadata = {
+  title: { absolute: SITE_TITLE },
+};
 
 function getCoverBlock(blocks: CatalogBlocks) {
   return blocks.find((b): b is Extract<Block, { type: "cover" }> => b.type === "cover");
@@ -19,11 +42,13 @@ export default function HomePage() {
 
   return (
     <main className="catalog-index">
+      <CatalogWall columns={getBackdropColumns(catalogs)} />
       <Link href="/admin" className="catalog-index-admin-link">
         Admin
       </Link>
       <div className="catalog-index-header">
-        <p>Catálogos</p>
+        <h1>{SITE_TITLE}</h1>
+        <span className="catalog-index-header-rule" />
       </div>
       {/* Sin catálogos publicados la página quedaba completamente en
           blanco: solo el título y una franja de fondo. Pasa de verdad —

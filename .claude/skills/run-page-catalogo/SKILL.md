@@ -73,7 +73,7 @@ open('.env.local', 'w').write(c)
 node .claude/skills/run-page-catalogo/driver.mjs <<'EOF'
 nav http://localhost:3000/admin/login
 wait-for input[name=username]
-fill input[name=username] admin
+fill input[name=username] <el de ADMIN_USERNAME en .env.local>
 fill input[name=password] driver-test-pw-999
 click button[type=submit]
 wait-url **/admin
@@ -85,7 +85,7 @@ EOF
 mv .env.local.driver-backup .env.local   # restore immediately, every time
 ```
 
-`ADMIN_USERNAME` is already `admin` in `.env.local` — only the hash needs swapping. This dance is the whole reason a login flow can't just be "fill the form with credentials from the docs."
+`ADMIN_USERNAME` is **not** `admin` — read the real one out of the file first (`grep '^ADMIN_USERNAME' .env.local`); it differs per deployment, and a wrong username fails exactly like a wrong password does, with a silent `POST /admin/login 200` and no redirect. Only the hash needs swapping. This dance is the whole reason a login flow can't just be "fill the form with credentials from the docs."
 
 ## Run (human path)
 

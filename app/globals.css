@@ -923,10 +923,115 @@ a {
 
 /* ───── CATALOG INDEX ("/", desde el índice multi-catálogo) ───── */
 .catalog-index {
+  position: relative;
   min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
-  padding: 72px 24px 96px;
+  background: #0d0c0b;
+  color: #fff;
+  padding: 96px 24px 96px;
+}
+
+/* Mural animado de fondo (components/index/CatalogWall.tsx).
+   `fixed` a propósito: el mural se queda quieto mientras la página
+   scrollea, así el movimiento propio de las columnas se lee como un
+   fondo y no como contenido que se va. */
+.catalog-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  gap: 12px;
+  padding: 0 12px;
+  overflow: hidden;
+  /* Un pelo más grande que la pantalla para que el desenfoque de los
+     bordes no deje ver el color de fondo por los costados. */
+  transform: scale(1.05);
+}
+
+/* Velo: las fotos son el fondo, no el contenido. Sin esto el título
+   blanco cae encima de zonas claras de alguna foto y deja de leerse.
+
+   Una sola capa (no dos superpuestas): dos degradados se multiplican
+   entre sí y el mural terminaba casi negro, sin que se distinguiera
+   ninguna foto. */
+.catalog-wall::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    rgba(13, 12, 11, 0.45),
+    rgba(13, 12, 11, 0.88) 78%
+  );
+}
+
+.catalog-wall-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog-wall-track {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* La duración la fija cada columna por style inline (ver CatalogWall):
+     con una sola, el mural se movería como un bloque. */
+  animation-name: catalog-wall-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  /* Promueve la columna a su propia capa: el desenfoque de las fotos se
+     rasteriza una vez y el compositor solo la desplaza, en vez de
+     recalcular el blur en cada cuadro. */
+  will-change: transform;
+}
+
+.catalog-wall-track--down {
+  animation-direction: reverse;
+}
+
+/* -50% = exactamente la primera de las dos copias de la columna, así
+   que al terminar el ciclo la segunda copia queda donde arrancó la
+   primera y el loop no tiene salto. */
+@keyframes catalog-wall-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.catalog-wall-tile {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  flex: none;
+  overflow: hidden;
+  background: #171614;
+}
+
+.catalog-wall-tile img {
+  filter: blur(3px) saturate(0.85);
+}
+
+/* Menos columnas en pantallas angostas: 5 franjas en un celular son
+   tiras de 60px donde no se distingue ninguna foto, y son 8 imágenes
+   de más para descargar. */
+@media (max-width: 1000px) {
+  .catalog-wall-col:nth-child(n + 4) {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .catalog-wall-col:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-wall-track {
+    animation: none;
+  }
 }
 
 /* Entrada discreta al panel — /admin ya tiene su propia pantalla de
@@ -940,42 +1045,64 @@ a {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
   padding: 8px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 100px;
-  background: var(--paper);
+  background: rgba(13, 12, 11, 0.55);
+  backdrop-filter: blur(6px);
   z-index: 10;
 }
 
 .catalog-index-admin-link:hover {
-  color: var(--ink);
-  border-color: var(--ink);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.7);
 }
 
 .catalog-index-header {
+  position: relative;
+  z-index: 1;
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 56px;
 }
 
 .catalog-index-empty {
+  position: relative;
+  z-index: 1;
   margin: 40px auto;
   text-align: center;
   font-size: 0.95rem;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.7);
 }
 
-.catalog-index-header p {
+.catalog-index-header h1 {
   margin: 0;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.28em;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 4.2rem);
+  line-height: 1.05;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #fff;
+  /* El mural cambia todo el tiempo debajo del título: el velo sostiene
+     el contraste en general, esta sombra lo sostiene también cuando
+     justo pasa una foto clara por detrás. */
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.6);
+}
+
+.catalog-index-header-rule {
+  display: block;
+  width: 64px;
+  height: 1px;
+  margin: 22px auto 0;
+  background: rgba(255, 255, 255, 0.45);
 }
 
 .catalog-index-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 28px;
@@ -989,7 +1116,7 @@ a {
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 2px;
-  background: #ddd;
+  background: #1a1917;
 }
 
 .catalog-index-card img {
