@@ -28,17 +28,28 @@ type CatalogRendererProps = {
   catalogId?: string;
 };
 
-function themeStyle(theme?: CatalogTheme): CSSProperties | undefined {
-  if (!theme) return undefined;
-  return {
-    "--ink": theme.ink,
-    "--paper": theme.paper,
-    "--line": theme.line,
-    "--muted": theme.muted,
-    "--accent": theme.accent,
-    "--display-font": theme.displayFont,
-    "--body-font": theme.bodyFont,
-  } as CSSProperties;
+function themeStyle(theme?: CatalogTheme, inventory?: CatalogInventory): CSSProperties | undefined {
+  if (!theme && !inventory?.buyBar) return undefined;
+  const style: Record<string, string> = {};
+  if (theme) {
+    Object.assign(style, {
+      "--ink": theme.ink,
+      "--paper": theme.paper,
+      "--line": theme.line,
+      "--muted": theme.muted,
+      "--accent": theme.accent,
+      "--display-font": theme.displayFont,
+      "--body-font": theme.bodyFont,
+    });
+  }
+  // Solo se emiten las que el admin realmente eligió: las que falten
+  // caen en el valor por defecto del CSS, que es el tema del catálogo.
+  const bar = inventory?.buyBar;
+  if (bar?.background) style["--buy-bar-bg"] = bar.background;
+  if (bar?.text) style["--buy-bar-fg"] = bar.text;
+  if (bar?.buttonBackground) style["--buy-btn-bg"] = bar.buttonBackground;
+  if (bar?.buttonText) style["--buy-btn-fg"] = bar.buttonText;
+  return style as CSSProperties;
 }
 
 /**
@@ -111,7 +122,7 @@ export default function CatalogRenderer({
   }
 
   return (
-    <main className="catalog-root" style={themeStyle(theme)}>
+    <main className="catalog-root" style={themeStyle(theme, inventory)}>
       {customTextColors && <style>{customTextColors}</style>}
       <ScrollProgress />
       <ScrollReveal />

@@ -406,8 +406,32 @@ export type LayoutId = z.infer<typeof LayoutIdSchema>;
  * `spreadsheetId` y no la URL: el id es la identidad estable del
  * documento y la URL se arma a partir de él cuando hace falta abrirlo.
  */
+/**
+ * Colores de la barra de compra, editables por catálogo.
+ *
+ * Van acá y no en `CatalogThemeSchema` porque la barra solo existe con
+ * inventario encendido: sumarlos al tema obligaría a todos los catálogos
+ * —incluidos los que no venden— a cargar cuatro colores que no usan.
+ *
+ * Todos opcionales: sin ellos la barra usa el tema del catálogo, que es
+ * como se ve hoy. El `regex` no es decorativo — estos valores terminan
+ * dentro de un atributo `style`, así que un valor libre sería una vía de
+ * inyección (mismo criterio que `TextColorsSchema`).
+ */
+const HexColor = z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+
+export const BuyBarStyleSchema = z.object({
+  background: HexColor.optional(),
+  text: HexColor.optional(),
+  buttonBackground: HexColor.optional(),
+  buttonText: HexColor.optional(),
+});
+export type BuyBarStyle = z.infer<typeof BuyBarStyleSchema>;
+
 export const CatalogInventorySchema = z.object({
   enabled: z.boolean(),
+  /** Colores de la barra de compra. Ausente = usa el tema del catálogo. */
+  buyBar: BuyBarStyleSchema.optional(),
   /** Id de la hoja de Google asociada, una sola por catálogo. Ausente = todavía no se creó. */
   spreadsheetId: z.string().optional(),
   /**

@@ -100,6 +100,7 @@ export default function BuyBar() {
   const hasOptions = selection.sizes.length > 0 || selection.cuts.length > 0;
 
   const chosen = [selection.selectedCut, selection.selectedSize].filter(Boolean).join(" · ");
+  const currentCutImage = selection.cuts.find((c) => c.label === selection.selectedCut)?.image;
 
   return (
     <>
@@ -111,9 +112,18 @@ export default function BuyBar() {
 
         <div className="buy-bar-right">
           {hasOptions && (
-            <button type="button" className="buy-bar-chooser" onClick={() => setSheetOpen(true)}>
-              {chosen || "Elegir"}
-              <span aria-hidden="true">▾</span>
+            <button
+              type="button"
+              className="buy-bar-chooser"
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+            >
+              {/* La miniatura del corte elegido delante del texto: es lo
+                  que hace evidente que acá se elige algo. Sin ella el
+                  control se leía como una etiqueta y no como un botón. */}
+              {currentCutImage && <Image src={currentCutImage} alt="" width={64} height={64} />}
+              <span className="buy-bar-chooser-text">{chosen || "Elegir talla"}</span>
+              <span className="buy-bar-chooser-caret" aria-hidden="true">▾</span>
             </button>
           )}
 

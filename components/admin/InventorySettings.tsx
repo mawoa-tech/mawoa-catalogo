@@ -1,7 +1,20 @@
 "use client";
 
-import type { CatalogInventory } from "@/data/schema";
+import type { BuyBarStyle, CatalogInventory } from "@/data/schema";
 import CheckboxField from "./fields/CheckboxField";
+
+/**
+ * Los cuatro colores de la barra, con el valor que muestra el selector
+ * cuando el catálogo todavía no eligió ninguno. No son "los de verdad"
+ * (los reales salen del tema): son solo un punto de partida razonable
+ * para el `<input type="color">`, que no admite estar vacío.
+ */
+const BUY_BAR_FIELDS: { key: keyof BuyBarStyle; label: string; fallback: string }[] = [
+  { key: "background", label: "Fondo", fallback: "#151515" },
+  { key: "text", label: "Texto", fallback: "#ffffff" },
+  { key: "buttonBackground", label: "Botón", fallback: "#25d366" },
+  { key: "buttonText", label: "Texto del botón", fallback: "#08300f" },
+];
 
 type InventorySettingsProps = {
   inventory: CatalogInventory | undefined;
@@ -66,6 +79,10 @@ export default function InventorySettings({ inventory, onChange }: InventorySett
     onChange({ ...inventory, enabled, spreadsheetId: id || undefined });
   };
 
+  const setBuyBarColor = (key: keyof BuyBarStyle, value: string) => {
+    onChange({ ...inventory, enabled, buyBar: { ...inventory?.buyBar, [key]: value } });
+  };
+
   const setPhone = (value: string) => {
     const digits = onlyDigits(value);
     onChange({ ...inventory, enabled, whatsappPhone: digits || undefined });
@@ -110,6 +127,33 @@ export default function InventorySettings({ inventory, onChange }: InventorySett
               Todo lo demás del inventario funciona igual.
             </p>
           )}
+        </div>
+      )}
+
+      {enabled && (
+        <div className="admin-field-group">
+          <h4>Colores de la barra de compra</h4>
+          <div className="admin-buybar-colors">
+            {BUY_BAR_FIELDS.map(({ key, label, fallback }) => (
+              <label key={key} className="admin-buybar-color">
+                <input
+                  type="color"
+                  value={inventory?.buyBar?.[key] ?? fallback}
+                  onChange={(e) => setBuyBarColor(key, e.target.value)}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="admin-inv-actions">
+            <button type="button" className="admin-btn" onClick={() => onChange({ ...inventory, enabled, buyBar: undefined })}>
+              Volver a los colores del catálogo
+            </button>
+          </div>
+          <p className="admin-field-hint">
+            Sin tocar nada, la barra usa los colores del catálogo (pestaña Colores). Lo que elijas acá pisa
+            solo esa barra.
+          </p>
         </div>
       )}
 
