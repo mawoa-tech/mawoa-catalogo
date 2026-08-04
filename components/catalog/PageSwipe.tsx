@@ -47,6 +47,32 @@ export default function PageSwipe() {
     if (!win) return;
     if (!win.matchMedia("(pointer: coarse)").matches) return;
 
+    /**
+     * Altura de página congelada.
+     *
+     * `100dvh` es "dinámico" a propósito: crece y se achica cuando el
+     * navegador del celular esconde o muestra su barra de direcciones.
+     * Eso mueve TODAS las páginas de lugar en medio del gesto — medido:
+     * al crecer el viewport 240px, la tercera página se corrió 720px.
+     * Por eso el paso de página terminaba en cualquier lado.
+     *
+     * Se fija una vez el alto real y se actualiza SOLO cuando cambia de
+     * verdad la ventana (rotar el teléfono, que cambia el ancho). Un
+     * cambio de alto con el mismo ancho es la barra del navegador
+     * apareciendo o yéndose, y ahí no se toca nada.
+     */
+    const root = doc.documentElement;
+    let lastWidth = win.innerWidth;
+    const freezeHeight = () => root.style.setProperty("--page-h", `${win.innerHeight}px`);
+    freezeHeight();
+    const onResize = () => {
+      if (win.innerWidth === lastWidth) return;
+      lastWidth = win.innerWidth;
+      freezeHeight();
+    };
+    win.addEventListener("resize", onResize);
+    win.addEventListener("orientationchange", freezeHeight);
+
     let startY = 0;
     let startIndex = 0;
     let tracking = false;
@@ -99,6 +125,9 @@ export default function PageSwipe() {
     return () => {
       doc.removeEventListener("touchstart", onStart);
       doc.removeEventListener("touchend", onEnd);
+      win.removeEventListener("resize", onResize);
+      win.removeEventListener("orientationchange", freezeHeight);
+      root.style.removeProperty("--page-h");
     };
   }, []);
 

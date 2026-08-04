@@ -121,7 +121,13 @@ a {
    de a una página entera y el recálculo ocurre durante el gesto. */
 .page {
   position: relative;
-  min-height: 100dvh;
+  /* `--page-h` la fija PageSwipe en celular con el alto real, y NO la
+     actualiza cuando aparece o se esconde la barra del navegador: con
+     `100dvh` a secas, ese cambio movía todas las páginas de lugar en
+     medio del gesto (medido: la tercera se corría 720px). El respaldo
+     `100dvh` es lo que se usa en escritorio y si el JavaScript no
+     llegara a montar. */
+  min-height: var(--page-h, 100dvh);
   scroll-snap-align: start;
   overflow: hidden;
   isolation: isolate;
