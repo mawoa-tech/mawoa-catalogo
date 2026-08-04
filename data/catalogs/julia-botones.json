@@ -71,7 +71,12 @@
           {
             "label": "negro",
             "type": "color",
-            "color": "#1b1b24"
+            "color": "#1b1b24",
+            "inventory": {
+              "price": 70,
+              "stock": 5,
+              "minStock": 3
+            }
           }
         ]
       }
@@ -103,7 +108,11 @@
             "label": "VERDE",
             "type": "color",
             "color": "#a18c34",
-            "soldOut": true
+            "inventory": {
+              "price": 70,
+              "stock": 4,
+              "minStock": 4
+            }
           }
         ]
       }
@@ -134,7 +143,12 @@
           {
             "label": "beige",
             "type": "color",
-            "color": "#f2e4d8"
+            "color": "#f2e4d8",
+            "inventory": {
+              "price": 70,
+              "stock": 0,
+              "minStock": 3
+            }
           }
         ]
       }
@@ -149,5 +163,9 @@
         "pageNumber": 7
       }
     }
-  ]
+  ],
+  "inventory": {
+    "enabled": true,
+    "whatsappPhone": "51936693616"
+  }
 }
