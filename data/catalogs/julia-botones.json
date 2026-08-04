@@ -74,7 +74,7 @@
             "color": "#1b1b24",
             "inventory": {
               "price": 70,
-              "stock": 5,
+              "stock": 6,
               "minStock": 3
             }
           }
