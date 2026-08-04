@@ -91,12 +91,15 @@ export default function PageSwipe() {
       return index;
     };
 
+    // Solo el panel de compra: adentro scrollea él, no la página. La
+    // barra NO va acá — se probó y fue un bug real: ocupa todo el ancho
+    // abajo, que es justo donde se apoya el dedo para deslizar, así que
+    // ignorarla hacía que muchos gestos no pasaran de página y encima
+    // dejaran la vista a mitad de camino.
     const isInsideOverlay = (target: EventTarget | null) =>
-      target instanceof Element && target.closest(".buy-sheet-backdrop, .buy-bar") !== null;
+      target instanceof Element && target.closest(".buy-sheet-backdrop") !== null;
 
     const onStart = (e: TouchEvent) => {
-      // Un solo dedo, y nunca cuando el gesto empieza dentro del panel de
-      // compra o de la barra: ahí el scroll es del panel, no de la página.
       tracking = e.touches.length === 1 && !isInsideOverlay(e.target);
       if (!tracking) return;
       startY = e.touches[0].clientY;
@@ -111,13 +114,19 @@ export default function PageSwipe() {
       if (!tracking) return;
       tracking = false;
       const delta = startY - (e.changedTouches[0]?.clientY ?? startY);
-      if (Math.abs(delta) < MIN_SWIPE_PX) return;
-
       const pages = Array.from(doc.querySelectorAll<HTMLElement>("section.page"));
       if (pages.length === 0) return;
 
-      const next = Math.min(Math.max(startIndex + (delta > 0 ? 1 : -1), 0), pages.length - 1);
-      win.scrollTo({ top: pages[next].offsetTop, behavior: "smooth" });
+      // Un gesto por debajo del umbral no cambia de página, pero igual
+      // hay que volver a calzar: como el anclaje nativo está apagado en
+      // táctil, si no, la vista queda a mitad de dos páginas. Antes
+      // pasaba justamente eso con cada toque o arrastre corto.
+      const target =
+        Math.abs(delta) < MIN_SWIPE_PX
+          ? pageAt(pages, win.scrollY)
+          : Math.min(Math.max(startIndex + (delta > 0 ? 1 : -1), 0), pages.length - 1);
+
+      win.scrollTo({ top: pages[target].offsetTop, behavior: "smooth" });
     };
 
     doc.addEventListener("touchstart", onStart, { passive: true });
