@@ -121,13 +121,7 @@ a {
    de a una página entera y el recálculo ocurre durante el gesto. */
 .page {
   position: relative;
-  /* `--page-h` la fija PageSwipe en celular con el alto real, y NO la
-     actualiza cuando aparece o se esconde la barra del navegador: con
-     `100dvh` a secas, ese cambio movía todas las páginas de lugar en
-     medio del gesto (medido: la tercera se corría 720px). El respaldo
-     `100dvh` es lo que se usa en escritorio y si el JavaScript no
-     llegara a montar. */
-  min-height: var(--page-h, 100dvh);
+  min-height: 100dvh;
   scroll-snap-align: start;
   overflow: hidden;
   isolation: isolate;
@@ -154,8 +148,11 @@ a {
    el "se traba" reportado. Si el JavaScript no llegara a montar, el
    catálogo queda con scroll libre normal: se pierde el calce por página,
    nunca la posibilidad de recorrerlo. */
+/* En táctil el paso de página lo maneja PageSwipe, así que el anclaje
+   nativo se apaga — pero solo cuando ese componente está vivo (él pone
+   la clase). Sin JavaScript queda el anclaje de CSS de siempre. */
 @media (pointer: coarse) {
-  html {
+  html.js-paging {
     scroll-snap-type: none;
   }
 }

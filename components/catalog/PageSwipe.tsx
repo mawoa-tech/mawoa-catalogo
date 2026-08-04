@@ -47,35 +47,21 @@ export default function PageSwipe() {
     if (!win) return;
     if (!win.matchMedia("(pointer: coarse)").matches) return;
 
-    /**
-     * Altura de página congelada.
-     *
-     * `100dvh` es "dinámico" a propósito: crece y se achica cuando el
-     * navegador del celular esconde o muestra su barra de direcciones.
-     * Eso mueve TODAS las páginas de lugar en medio del gesto — medido:
-     * al crecer el viewport 240px, la tercera página se corrió 720px.
-     * Por eso el paso de página terminaba en cualquier lado.
-     *
-     * Se fija una vez el alto real y se actualiza SOLO cuando cambia de
-     * verdad la ventana (rotar el teléfono, que cambia el ancho). Un
-     * cambio de alto con el mismo ancho es la barra del navegador
-     * apareciendo o yéndose, y ahí no se toca nada.
-     */
+    // El anclaje nativo se apaga SOLO si este componente está vivo: con
+    // la clase puesta desde acá, un visitante cuyo JavaScript no cargue
+    // conserva el anclaje de CSS de siempre en vez de quedarse sin
+    // ningún calce.
     const root = doc.documentElement;
-    let lastWidth = win.innerWidth;
-    const freezeHeight = () => root.style.setProperty("--page-h", `${win.innerHeight}px`);
-    freezeHeight();
-    const onResize = () => {
-      if (win.innerWidth === lastWidth) return;
-      lastWidth = win.innerWidth;
-      freezeHeight();
-    };
-    win.addEventListener("resize", onResize);
-    win.addEventListener("orientationchange", freezeHeight);
+    root.classList.add("js-paging");
 
     let startY = 0;
     let startIndex = 0;
     let tracking = false;
+    /** En qué página se dejó la vista. Se recuerda en vez de recalcularla
+     *  al cambiar el viewport: si la barra del navegador se va estando en
+     *  la página 5, la posición vieja queda más cerca de la 4 y volver a
+     *  calzar por cercanía te movía una página para atrás sola. */
+    let currentIndex = -1;
 
     /** Índice de la página cuyo borde superior está más cerca de la vista. */
     const pageAt = (pages: HTMLElement[], y: number) => {
@@ -110,6 +96,35 @@ export default function PageSwipe() {
       startIndex = pageAt(Array.from(doc.querySelectorAll<HTMLElement>("section.page")), win.scrollY);
     };
 
+    /**
+     * Lleva la vista al comienzo de una página y la vuelve a acomodar
+     * cuando termina de moverse.
+     *
+     * La segunda parte no es paranoia: en celular la barra del navegador
+     * aparece y desaparece durante el propio gesto, y eso cambia el alto
+     * del viewport — o sea que `offsetTop` de la página destino se mueve
+     * MIENTRAS dura la animación (medido: al crecer el viewport 240px,
+     * la tercera página se corrió 720px). Por eso se vuelve a leer la
+     * posición ya asentada y se corrige si quedó desfasada. Se intenta
+     * como mucho tres veces para no quedar en un ida y vuelta infinito.
+     */
+    const goTo = (page: HTMLElement, index: number) => {
+      currentIndex = index;
+      win.scrollTo({ top: page.offsetTop, behavior: "smooth" });
+      let intentos = 0;
+      const acomodar = () => {
+        intentos += 1;
+        const desfase = Math.abs(win.scrollY - page.offsetTop);
+        if (desfase <= 2 || intentos > 3) return;
+        // El primer reintento sigue siendo suave; los siguientes son
+        // secos, porque a esa altura ya se notó que algo se movió y
+        // encadenar animaciones se ve peor que corregir de una.
+        win.scrollTo({ top: page.offsetTop, behavior: intentos === 1 ? "smooth" : "auto" });
+        win.setTimeout(acomodar, 260);
+      };
+      win.setTimeout(acomodar, 480);
+    };
+
     const onEnd = (e: TouchEvent) => {
       if (!tracking) return;
       tracking = false;
@@ -126,17 +141,40 @@ export default function PageSwipe() {
           ? pageAt(pages, win.scrollY)
           : Math.min(Math.max(startIndex + (delta > 0 ? 1 : -1), 0), pages.length - 1);
 
-      win.scrollTo({ top: pages[target].offsetTop, behavior: "smooth" });
+      goTo(pages[target], target);
+    };
+
+    /**
+     * Cuando la barra del navegador aparece o se va, el viewport cambia
+     * de alto y todas las páginas se agrandan o achican: la vista queda
+     * entre dos. Se vuelve a calzar en la más cercana, salvo que el
+     * dedo esté apoyado en ese momento — ahí manda el gesto, no esto.
+     */
+    let reajuste = 0;
+    const onResize = () => {
+      win.clearTimeout(reajuste);
+      reajuste = win.setTimeout(() => {
+        if (tracking) return;
+        const pages = Array.from(doc.querySelectorAll<HTMLElement>("section.page"));
+        if (pages.length === 0) return;
+        const index = currentIndex >= 0 && currentIndex < pages.length ? currentIndex : pageAt(pages, win.scrollY);
+        const page = pages[index];
+        if (Math.abs(win.scrollY - page.offsetTop) > 2) {
+          currentIndex = index;
+          win.scrollTo({ top: page.offsetTop, behavior: "smooth" });
+        }
+      }, 220);
     };
 
     doc.addEventListener("touchstart", onStart, { passive: true });
     doc.addEventListener("touchend", onEnd, { passive: true });
+    win.addEventListener("resize", onResize);
     return () => {
       doc.removeEventListener("touchstart", onStart);
       doc.removeEventListener("touchend", onEnd);
       win.removeEventListener("resize", onResize);
-      win.removeEventListener("orientationchange", freezeHeight);
-      root.style.removeProperty("--page-h");
+      win.clearTimeout(reajuste);
+      root.classList.remove("js-paging");
     };
   }, []);
 
