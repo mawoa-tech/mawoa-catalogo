@@ -747,9 +747,40 @@ a {
   flex-wrap: nowrap;
   min-height: var(--buy-bar-h);
   padding: 10px 18px;
-  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  background: color-mix(in srgb, var(--ink) 92%, transparent);
   color: var(--paper);
-  backdrop-filter: blur(6px);
+  /* Sin `backdrop-filter`: el navegador lo recalcula en cada cuadro del
+     scroll y hay una barra por página, mientras que sobre un fondo ya
+     opaco al 92% el desenfoque casi no se ve. Se cambió el 88% por 92%
+     para compensar lo poco que aportaba. */
+
+  /* Entra deslizándose junto con el resto de la página, en vez de
+     aparecer ya puesta: es lo que hace que se lea como parte de la
+     página y no como una barra pegada a la pantalla. `translate` y no
+     `transform`: varios elementos de las plantillas usan `transform`
+     para posicionarse y pisarlo los rompe (mismo motivo por el que
+     ScrollReveal usa las propiedades independientes). */
+  translate: 0 100%;
+  opacity: 0;
+  transition:
+    translate 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
+    opacity 0.35s ease 0.12s;
+}
+
+.page.in-view > .buy-bar,
+/* Sin JavaScript (o antes de que monte) la barra tiene que verse igual:
+   nunca puede quedar invisible por depender de una clase que no llegó. */
+html:not(:has(.page-anim)) .buy-bar {
+  translate: 0 0;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buy-bar {
+    transition: none;
+    translate: 0 0;
+    opacity: 1;
+  }
 }
 
 /* La barra flota sobre la página, así que hay que reservarle el lugar o
@@ -765,74 +796,24 @@ a {
   padding-bottom: 68px;
 }
 
-/* Con tallas o cortes la barra crece, y el espacio reservado TIENE que
-   crecer igual: son los dos números que el comentario de arriba dice
-   que no pueden desincronizarse. Se resuelve con `:has` en vez de con
-   JavaScript, así sigue valiendo para las 10 plantillas sin tocar
-   ninguna. Los tres casos son los tres altos reales de la barra. */
-.buy-bar:has(.buy-bar-sizes) {
-  --buy-bar-h: 116px;
-}
-
-.buy-bar:has(.buy-bar-cuts) {
-  --buy-bar-h: 184px;
-}
-
-.page:has(> .buy-bar .buy-bar-sizes) {
-  padding-bottom: 116px;
-}
-
-.page:has(> .buy-bar .buy-bar-cuts) {
-  /* Medido sobre la barra real (miniatura de 44px + nombre + la fila de
-     tallas + la fila de compra), no estimado: con 152px la barra tapaba
-     ~26px del contenido de la página. */
-  padding-bottom: 184px;
-}
-
-/* Con opciones la barra deja de ser una sola fila. */
-.buy-bar:has(.buy-bar-options) {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-
-.buy-bar-main {
+/* Talla y corte NO viven en la barra: se eligen en un panel que se abre
+   encima (`.buy-sheet`). La primera versión los ponía adentro y la barra
+   pasaba de 68px a 184px, tapando las fotos del producto — que es lo que
+   la página tiene para mostrar. Así el alto de la barra vuelve a ser uno
+   solo, y el espacio reservado por `.page` también. */
+.buy-bar-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: nowrap;
-}
-
-.buy-bar-options {
-  display: flex;
-  flex-direction: column;
   gap: 8px;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
-/* Scroll horizontal propio: con muchas tallas o cortes la fila se
-   desplaza sola en vez de agrandar la barra, que es lo que rompería el
-   calce con el espacio reservado arriba. */
-.buy-bar-sizes,
-.buy-bar-cuts {
-  display: flex;
+.buy-bar-chooser {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.buy-bar-sizes::-webkit-scrollbar,
-.buy-bar-cuts::-webkit-scrollbar {
-  display: none;
-}
-
-.buy-bar-size {
-  flex: 0 0 auto;
-  min-width: 38px;
-  min-height: 34px;
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 8px 14px;
   border: 1px solid color-mix(in srgb, var(--paper) 45%, transparent);
   border-radius: 100px;
   background: none;
@@ -843,51 +824,198 @@ a {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.buy-bar-size.selected {
-  background: var(--paper);
-  color: var(--ink);
+/* ---- Panel de elección (corte y talla) ----
+   `position: fixed`: queda fuera del flujo de la página, así que no
+   afecta en nada el alto de la sección ni el scroll de página en
+   página. */
+.buy-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 }
 
-/* Agotado se muestra, no se esconde: que la talla exista y no esté
-   disponible es información para quien compra. La línea cruzada dice lo
-   mismo que la opacidad, para no depender de distinguir un gris de otro. */
-.buy-bar-size.is-out,
-.buy-bar-cut.is-out {
-  opacity: 0.4;
-  text-decoration: line-through;
-}
-
-.buy-bar-cut {
-  flex: 0 0 auto;
+.buy-sheet {
+  width: min(680px, 100%);
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 16px 16px 0 0;
+  padding: 14px 16px 16px;
+}
+
+@media (min-width: 700px) {
+  .buy-sheet-backdrop {
+    align-items: center;
+  }
+
+  .buy-sheet {
+    border-radius: 16px;
+  }
+}
+
+.buy-sheet-head {
+  display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: none;
-  color: var(--paper);
-  font: inherit;
-  font-size: 0.6rem;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.buy-sheet-head p {
+  margin: 0;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.buy-sheet-head button {
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.buy-sheet-body {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.buy-sheet-body h3 {
+  margin: 0 0 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.buy-sheet-body section + section {
+  margin-top: 16px;
+}
+
+/* El corte se elige mirando la forma, así que la foto va grande: en una
+   miniatura de 44px no se distingue un hilo de una tanga. */
+.buy-sheet-cuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.buy-sheet-cut {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.buy-sheet-cut img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.buy-sheet-cut-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-bottom: 6px;
+}
+
+.buy-sheet-cut.selected {
+  border-color: var(--ink);
+}
+
+/* Agotado se muestra, no se esconde: que el corte exista y no esté
+   disponible es información para quien compra. */
+.buy-sheet-cut.is-out img,
+.buy-sheet-size.is-out {
+  opacity: 0.4;
+}
+
+.buy-sheet-out {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: #8f2020;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.buy-sheet-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.buy-sheet-size {
+  min-width: 46px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 100px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
 }
 
-.buy-bar-cut img {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 6px;
-  display: block;
+.buy-sheet-size.selected {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
 }
 
-.buy-bar-cut.selected {
-  border-color: var(--paper);
+.buy-sheet-size.is-out {
+  text-decoration: line-through;
+}
+
+.buy-sheet-done {
+  margin-top: 14px;
+  min-height: 46px;
+  border: none;
+  border-radius: 100px;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .buy-bar-info {
@@ -993,12 +1121,15 @@ a {
   }
 
   /* Y también hay que devolver el espacio que la barra tenía reservado:
-     escondiéndola sola, el PDF quedaba con hasta 184px de hueco al pie
-     de cada página de producto. */
-  .page:has(> .buy-bar),
-  .page:has(> .buy-bar .buy-bar-sizes),
-  .page:has(> .buy-bar .buy-bar-cuts) {
+     escondiéndola sola, el PDF quedaba con un hueco al pie de cada
+     página de producto. */
+  .page:has(> .buy-bar) {
     padding-bottom: 0 !important;
+  }
+
+  /* El panel de elección no existe al imprimir. */
+  .buy-sheet-backdrop {
+    display: none !important;
   }
 }
 

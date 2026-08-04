@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import type { StockStatus } from "@/data/schema";
 import { useVariantSelection } from "./VariantContext";
@@ -24,8 +25,6 @@ const STATUS_CLASS: Record<StockStatus, string> = {
  * La foto va como URL y no como archivo: un enlace `wa.me` solo
  * transporta texto — no existe forma de adjuntar una imagen. WhatsApp
  * muestra la vista previa del enlace, que es lo más cercano posible.
- * Se manda absoluta porque el mensaje se abre fuera del sitio, donde
- * una ruta como `/imagenes/x.webp` no significa nada.
  *
  * El texto se codifica entero: los saltos de línea y los acentos del
  * mensaje tienen que viajar como corresponde o WhatsApp lo recibe
@@ -76,10 +75,19 @@ function whatsappHref(
  * pantalla, que es un bug que este proyecto ya tuvo que arreglar dos
  * veces en celulares. Es el mismo mecanismo que usa SoldOutBadge.
  *
+ * Talla y corte NO se eligen en la barra: se eligen en un panel que se
+ * abre encima (`position: fixed`, fuera del flujo de la página). La
+ * primera versión los ponía adentro y la barra pasaba de 68px a 184px,
+ * comiéndose las fotos del producto — que es justamente lo que la
+ * página tiene para mostrar. Además, así el corte se puede ver en
+ * grande: se elige mirando la forma, y en una miniatura de 44px no se
+ * distingue una de otra.
+ *
  * No muestra la cantidad exacta: al visitante le alcanza con saber si
  * puede comprar.
  */
 export default function BuyBar() {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const selection = useVariantSelection();
   if (!selection) return null;
 
@@ -89,98 +97,139 @@ export default function BuyBar() {
   const status = selection.currentStatus;
   const soldOut = status === "OUT_OF_STOCK";
   const canBuy = !soldOut && Boolean(selection.whatsappPhone);
+  const hasOptions = selection.sizes.length > 0 || selection.cuts.length > 0;
+
+  const chosen = [selection.selectedCut, selection.selectedSize].filter(Boolean).join(" · ");
 
   return (
-    <div className="buy-bar">
-      {(selection.sizes.length > 0 || selection.cuts.length > 0) && (
-        <div className="buy-bar-options">
-          {selection.cuts.length > 0 && (
-            <div className="buy-bar-cuts" role="group" aria-label="Corte">
-              {selection.cuts.map((cut) => (
-                <button
-                  key={cut.label}
-                  type="button"
-                  className={`buy-bar-cut${cut.label === selection.selectedCut ? " selected" : ""}${
-                    cut.status === "OUT_OF_STOCK" ? " is-out" : ""
-                  }`}
-                  onClick={() => selection.selectCut(cut.label)}
-                  aria-pressed={cut.label === selection.selectedCut}
-                  title={`${cut.label} — ${STATUS_LABEL[cut.status]}`}
-                >
-                  {cut.image && <Image src={cut.image} alt="" width={64} height={64} />}
-                  <span>{cut.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {selection.sizes.length > 0 && (
-            <div className="buy-bar-sizes" role="group" aria-label="Talla">
-              {selection.sizes.map((size) => (
-                <button
-                  key={size.label}
-                  type="button"
-                  className={`buy-bar-size${size.label === selection.selectedSize ? " selected" : ""}${
-                    size.status === "OUT_OF_STOCK" ? " is-out" : ""
-                  }`}
-                  onClick={() => selection.selectSize(size.label)}
-                  aria-pressed={size.label === selection.selectedSize}
-                  title={`Talla ${size.label} — ${STATUS_LABEL[size.status]}`}
-                >
-                  {size.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="buy-bar-main">
+    <>
+      <div className="buy-bar">
         <div className="buy-bar-info">
           <span className="buy-bar-color">{current.label}</span>
           <span className={`buy-bar-status ${STATUS_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
         </div>
 
-        {canBuy ? (
-          <a
-            className="buy-bar-action"
-            href={whatsappHref(
-              selection.whatsappPhone as string,
-              selection.productName,
-              current.label,
-              selection.selectedSize,
-              selection.selectedCut,
-              selection.photo
-            )}
-            // El enlace se completa con la foto recién acá, con el origen
-            // real del navegador (ver el comentario en whatsappHref).
-            // Asignar `href` dentro del handler alcanza: la navegación
-            // ocurre después de que el handler termina.
-            onClick={(e) => {
-              e.currentTarget.href = whatsappHref(
+        <div className="buy-bar-right">
+          {hasOptions && (
+            <button type="button" className="buy-bar-chooser" onClick={() => setSheetOpen(true)}>
+              {chosen || "Elegir"}
+              <span aria-hidden="true">▾</span>
+            </button>
+          )}
+
+          {canBuy ? (
+            <a
+              className="buy-bar-action"
+              href={whatsappHref(
                 selection.whatsappPhone as string,
                 selection.productName,
                 current.label,
                 selection.selectedSize,
                 selection.selectedCut,
-                selection.photo,
-                window.location.origin
-              );
-            }}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Comprar por WhatsApp
-          </a>
-        ) : (
-          // Un botón deshabilitado y no la ausencia del botón: si
-          // desaparece, no se entiende por qué esta combinación no se
-          // puede comprar y otras sí.
-          <span className="buy-bar-action is-disabled" aria-disabled="true">
-            {soldOut ? "Agotado" : "No disponible"}
-          </span>
-        )}
+                selection.photo
+              )}
+              // El enlace se completa con la foto recién acá, con el
+              // origen real del navegador (ver whatsappHref). Asignar
+              // `href` dentro del handler alcanza: la navegación ocurre
+              // después de que el handler termina.
+              onClick={(e) => {
+                e.currentTarget.href = whatsappHref(
+                  selection.whatsappPhone as string,
+                  selection.productName,
+                  current.label,
+                  selection.selectedSize,
+                  selection.selectedCut,
+                  selection.photo,
+                  window.location.origin
+                );
+              }}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Comprar
+            </a>
+          ) : (
+            // Un botón deshabilitado y no la ausencia del botón: si
+            // desaparece, no se entiende por qué esta combinación no se
+            // puede comprar y otras sí.
+            <span className="buy-bar-action is-disabled" aria-disabled="true">
+              {soldOut ? "Agotado" : "No disponible"}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+
+      {sheetOpen && hasOptions && (
+        <div className="buy-sheet-backdrop" onClick={() => setSheetOpen(false)}>
+          <div
+            className="buy-sheet"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Elegir corte y talla"
+          >
+            <div className="buy-sheet-head">
+              <p>{selection.productName}</p>
+              <button type="button" onClick={() => setSheetOpen(false)} aria-label="Cerrar">
+                ✕
+              </button>
+            </div>
+
+            <div className="buy-sheet-body">
+              {selection.cuts.length > 0 && (
+                <section>
+                  <h3>Corte</h3>
+                  <div className="buy-sheet-cuts">
+                    {selection.cuts.map((cut) => (
+                      <button
+                        key={cut.label}
+                        type="button"
+                        className={`buy-sheet-cut${cut.label === selection.selectedCut ? " selected" : ""}${
+                          cut.status === "OUT_OF_STOCK" ? " is-out" : ""
+                        }`}
+                        onClick={() => selection.selectCut(cut.label)}
+                        aria-pressed={cut.label === selection.selectedCut}
+                      >
+                        {cut.image && (
+                          <Image src={cut.image} alt="" width={320} height={400} sizes="(max-width: 640px) 45vw, 220px" />
+                        )}
+                        <span className="buy-sheet-cut-name">{cut.label}</span>
+                        {cut.status === "OUT_OF_STOCK" && <span className="buy-sheet-out">Agotado</span>}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {selection.sizes.length > 0 && (
+                <section>
+                  <h3>Talla</h3>
+                  <div className="buy-sheet-sizes">
+                    {selection.sizes.map((size) => (
+                      <button
+                        key={size.label}
+                        type="button"
+                        className={`buy-sheet-size${size.label === selection.selectedSize ? " selected" : ""}${
+                          size.status === "OUT_OF_STOCK" ? " is-out" : ""
+                        }`}
+                        onClick={() => selection.selectSize(size.label)}
+                        aria-pressed={size.label === selection.selectedSize}
+                        title={STATUS_LABEL[size.status]}
+                      >
+                        {size.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+
+            <button type="button" className="buy-sheet-done" onClick={() => setSheetOpen(false)}>
+              {soldOut ? "Cerrar" : `Listo — ${STATUS_LABEL[status]}`}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
