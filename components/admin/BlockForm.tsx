@@ -118,7 +118,12 @@ export default function BlockForm({ block, onChange }: BlockFormProps) {
           </div>
           <div className="admin-field-group">
             <h4>Colores</h4>
-            <SwatchesEditor swatches={data.swatches} onChange={(v) => set({ swatches: v })} />
+            <SwatchesEditor
+              swatches={data.swatches}
+              onChange={(v) => set({ swatches: v })}
+              pageId={data.id}
+              pageSoldOut={data.soldOut === true}
+            />
           </div>
         </>
       );

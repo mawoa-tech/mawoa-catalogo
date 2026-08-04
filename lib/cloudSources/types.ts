@@ -22,6 +22,39 @@ export type CloudPickedFile = {
   sourceFileId: string;
 };
 
+/** Una carpeta o una imagen, tal como se dibuja en la grilla del explorador. */
+export type CloudItem = {
+  id: string;
+  name: string;
+  kind: "folder" | "image";
+  /** URL de miniatura ya utilizable como `src` — puede faltar (archivo sin vista previa generada). */
+  thumbnailUrl?: string;
+};
+
+export type CloudListParams = {
+  /** null = la raíz de la unidad del usuario. */
+  folderId: string | null;
+  /** Cuando viene, busca por nombre en todo el drive e ignora `folderId`. */
+  search?: string;
+  /** true = "compartidos conmigo" en vez de la unidad propia. */
+  shared?: boolean;
+  pageToken?: string;
+};
+
+/**
+ * Navegación del proveedor dibujada por *nosotros* (components/admin/CloudBrowser.tsx)
+ * en vez de por el widget del proveedor. Sustituye al Picker de Google,
+ * cuya interfaz vive dentro de un iframe y no admite ningún estilo — se
+ * veía como una pieza ajena pegada dentro del panel.
+ */
+export type CloudBrowser = {
+  /** Pide autorización si hace falta. Separado de `list` para poder mostrar el estado "conectando" antes del primer listado. */
+  connect: () => Promise<void>;
+  list: (params: CloudListParams) => Promise<{ items: CloudItem[]; nextPageToken?: string }>;
+  /** Descarga los archivos elegidos, ya listos para subir. */
+  download: (ids: string[]) => Promise<CloudPickedFile[]>;
+};
+
 export type CloudSource = {
   id: string;
   label: string;
@@ -29,12 +62,12 @@ export type CloudSource = {
   isConfigured: () => boolean;
   /** Motivo human-legible de por qué no está configurado, para mostrar en vez de fallar en silencio. */
   unconfiguredReason?: () => string;
-  /** Abre el picker nativo del proveedor; una lista vacía significa "canceló sin elegir nada", no un error. */
-  pickImages: () => Promise<CloudPickedFile[]>;
+  /** Explorador propio del panel para este proveedor. */
+  browse: CloudBrowser;
   /**
-   * Re-descarga un archivo ya conocido por id, sin reabrir el picker
-   * completo (Fase F) — opcional porque un proveedor futuro podría no
-   * soportar re-sync.
+   * Re-descarga un archivo ya conocido por id, sin abrir el explorador
+   * (Fase F) — opcional porque un proveedor futuro podría no soportar
+   * re-sync.
    */
   resyncFile?: (fileId: string) => Promise<{ blob: Blob; previewUrl: string }>;
 };

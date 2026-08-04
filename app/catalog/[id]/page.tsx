@@ -78,6 +78,8 @@ export default async function CatalogPage({ params }: CatalogPageProps) {
       theme={entry.theme}
       layoutId={entry.layoutId}
       pdfHref={`/catalog-${id}.pdf`}
+      inventory={entry.inventory}
+      catalogId={id}
     />
   );
 }

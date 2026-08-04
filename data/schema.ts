@@ -12,11 +12,41 @@ import { z } from "zod";
 // ---- Shared leaf shapes ----
 
 /**
+ * Inventario de UNA variante — o sea de un color concreto de un modelo,
+ * no del modelo entero: es el color el que se agota, tiene su propio
+ * precio y su propio SKU.
+ *
+ * Va colgado del swatch y es opcional en dos niveles a la vez: un
+ * catálogo puede no llevar inventario (`CatalogInventorySchema.enabled`)
+ * y, aun llevándolo, un color puede no tener números cargados todavía.
+ * Nada de lo ya publicado necesita migrarse.
+ *
+ * `stock` acepta negativos a propósito. No es que tenga sentido tener
+ * -1 unidades: es que el stock lo va a escribir una persona en una hoja
+ * de Google, y si alguien tipea -1 el sistema tiene que poder LEER ese
+ * dato para corregirlo y avisar. Rechazarlo en el schema haría fallar
+ * la sincronización entera por una celda mal cargada. `stockStatus` lo
+ * trata como agotado, que es la lectura segura.
+ */
+export const VariantInventorySchema = z.object({
+  /** En la moneda del catálogo. Separado del `price` de texto de la página, que es libre ("S/ 229") y sigue existiendo. */
+  price: z.number().nonnegative().optional(),
+  stock: z.number().int(),
+  /** Por debajo o igual de esto (y con stock > 0) la variante se considera "últimas unidades". */
+  minStock: z.number().int().nonnegative(),
+});
+export type VariantInventory = z.infer<typeof VariantInventorySchema>;
+
+/**
  * `soldOut` es opcional a propósito: todo el contenido ya publicado
  * (y las 10 plantillas de arranque) se validan igual sin tocarlo, y
  * "no dice nada" significa disponible. Vive tanto acá — un color
  * puntual agotado — como en `ProductVariantSchema` — el modelo entero
  * agotado; son dos estados distintos y reales.
+ *
+ * `inventory` es el mismo criterio llevado a los números: un color sin
+ * inventario cargado no participa del control de stock, y un catálogo
+ * con el control apagado se comporta exactamente como antes.
  */
 export const SwatchItemSchema = z.discriminatedUnion("type", [
   z.object({
@@ -24,15 +54,84 @@ export const SwatchItemSchema = z.discriminatedUnion("type", [
     type: z.literal("image"),
     image: z.string(),
     soldOut: z.boolean().optional(),
+    inventory: VariantInventorySchema.optional(),
   }),
   z.object({
     label: z.string(),
     type: z.literal("color"),
     color: z.string(),
     soldOut: z.boolean().optional(),
+    inventory: VariantInventorySchema.optional(),
   }),
 ]);
 export type SwatchItem = z.infer<typeof SwatchItemSchema>;
+
+// ---- Inventario: estado derivado y SKU ----
+
+export const STOCK_STATUSES = ["AVAILABLE", "LOW_STOCK", "OUT_OF_STOCK"] as const;
+export type StockStatus = (typeof STOCK_STATUSES)[number];
+
+/**
+ * El estado NO se guarda: se calcula acá cada vez que hace falta.
+ *
+ * Guardarlo junto al número sería tener dos fuentes de verdad para lo
+ * mismo, y se desincronizarían la primera vez que alguien edite el stock
+ * en la hoja de Google sin tocar la columna de estado. La hoja sí va a
+ * tener una columna ESTADO, pero como salida de esta función, no como
+ * dato de entrada.
+ */
+export function stockStatus(stock: number, minStock: number): StockStatus {
+  if (stock <= 0) return "OUT_OF_STOCK";
+  if (stock <= minStock) return "LOW_STOCK";
+  return "AVAILABLE";
+}
+
+/**
+ * Normaliza un texto para que pueda formar parte de un SKU: sin
+ * acentos, sin espacios ni signos, en mayúsculas.
+ *
+ * Los acentos se sacan con el rango escapado `\u0300-\u036f` y no con
+ * los caracteres combinantes tipeados directo: este proyecto ya cometió
+ * exactamente ese error dos veces (ver el decision log), y son
+ * caracteres invisibles en el editor.
+ */
+function skuToken(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+/**
+ * SKU de una variante: `MODELO-COL` (ej. `MODELOA-NEG`).
+ *
+ * Se DERIVA del nombre del modelo y del color en vez de guardarse, así
+ * nadie tiene que escribirlo y no puede quedar viejo respecto al
+ * contenido. La contrapartida, asumida: renombrar el modelo o el color
+ * cambia el SKU. Nada más lo mueve — reordenar páginas, agregar modelos
+ * o borrar otros colores lo dejan igual (por eso el número de página no
+ * forma parte del código).
+ *
+ * `taken` son los SKU ya asignados en el mismo catálogo: si dos colores
+ * distintos abrevian igual ("Negro" y "Negra" → NEG), el segundo recibe
+ * un sufijo correlativo en vez de pisar al primero. Con el recorrido en
+ * orden de documento (ver `catalogVariants`) el resultado es siempre el
+ * mismo para el mismo contenido, que es lo que hace idempotente la
+ * sincronización con la hoja.
+ */
+export function variantSku(modelName: string, colorLabel: string, taken?: Iterable<string>): string {
+  const model = skuToken(modelName) || "MODELO";
+  const color = skuToken(colorLabel).slice(0, 3) || "COL";
+  const base = `${model}-${color}`;
+
+  const used = new Set(taken ?? []);
+  if (!used.has(base)) return base;
+
+  let n = 2;
+  while (used.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
 
 export const CollageLayoutSchema = z.enum(["four", "three", "two", "one"]);
 export type CollageLayout = z.infer<typeof CollageLayoutSchema>;
@@ -226,9 +325,112 @@ export const LayoutIdSchema = z.enum([
 ]);
 export type LayoutId = z.infer<typeof LayoutIdSchema>;
 
+// ---- Inventario: configuración del catálogo ----
+
+/**
+ * Control de stock del catálogo. Todo el bloque es opcional: un
+ * catálogo sin él (todos los publicados hoy) se comporta exactamente
+ * como siempre — no muestra stock, no consulta nada, no depende de
+ * Google para nada.
+ *
+ * Acá viven solo datos de CONFIGURACIÓN, que cambian muy de vez en
+ * cuando y por eso pueden viajar con el contenido del catálogo (que se
+ * publica por commit). Los números de stock NO viven acá: cambian
+ * seguido y van a Vercel Blob, para no pagar un commit y un redeploy
+ * por cada movimiento.
+ *
+ * `spreadsheetId` y no la URL: el id es la identidad estable del
+ * documento y la URL se arma a partir de él cuando hace falta abrirlo.
+ */
+export const CatalogInventorySchema = z.object({
+  enabled: z.boolean(),
+  /** Id de la hoja de Google asociada, una sola por catálogo. Ausente = todavía no se creó. */
+  spreadsheetId: z.string().optional(),
+  /**
+   * Teléfono al que va el botón "Comprar por WhatsApp", en formato
+   * internacional sin signos (ej. `51987654321`). Es del catálogo, no
+   * del código: cada catálogo puede tener el suyo.
+   */
+  whatsappPhone: z.string().regex(/^[0-9]{6,15}$/).optional(),
+});
+export type CatalogInventory = z.infer<typeof CatalogInventorySchema>;
+
 export const CatalogEntrySchema = z.object({
   layoutId: LayoutIdSchema.default("original"),
   theme: CatalogThemeSchema,
   blocks: CatalogBlocksSchema,
+  inventory: CatalogInventorySchema.optional(),
 });
 export type CatalogEntry = z.infer<typeof CatalogEntrySchema>;
+
+// ---- Inventario: las variantes que tiene un catálogo ----
+
+/**
+ * Una variante concreta del catálogo, ya resuelta: el modelo, el color,
+ * su SKU y sus números si los tiene.
+ *
+ * `pageId` + `swatchIndex` son las coordenadas dentro del contenido (qué
+ * página y cuál de sus colores), y sirven para volver a escribir sobre
+ * la variante correcta al editar. El SKU es la identidad hacia afuera:
+ * es lo que viaja a la hoja de Google y al Kardex.
+ */
+export type CatalogVariant = {
+  pageId: string;
+  swatchIndex: number;
+  model: string;
+  color: string;
+  sku: string;
+  inventory?: VariantInventory;
+  /** Marcado a mano como agotado, independientemente del stock (ver `soldOut` en el swatch). */
+  soldOut: boolean;
+};
+
+/**
+ * Todas las variantes de un catálogo, en orden de documento.
+ *
+ * Es EL lugar donde se recorre el contenido para armar inventario, y
+ * existe por dos motivos concretos: que la resolución de SKU repetidos
+ * ocurra una sola vez (y no una copia distinta en cada consumidor), y
+ * que el orden sea siempre el mismo para el mismo contenido — de ahí
+ * sale que sincronizar dos veces seguidas produzca exactamente el mismo
+ * resultado, que es lo que pide la hoja de Google.
+ */
+export function catalogVariants(blocks: CatalogBlocks): CatalogVariant[] {
+  const variants: CatalogVariant[] = [];
+  const taken = new Set<string>();
+
+  for (const block of blocks) {
+    if (block.type !== "productDetail") continue;
+    block.data.swatches.forEach((swatch, swatchIndex) => {
+      const sku = variantSku(block.data.name, swatch.label, taken);
+      taken.add(sku);
+      variants.push({
+        pageId: block.data.id,
+        swatchIndex,
+        model: block.data.name,
+        color: swatch.label,
+        sku,
+        inventory: swatch.inventory,
+        // El modelo entero agotado también agota cada uno de sus colores
+        // — es la misma regla que ya aplica components/catalog/soldOut.ts
+        // para pintar la página, dicha una vez más acá porque el
+        // inventario razona por variante, no por página.
+        soldOut: swatch.soldOut === true || block.data.soldOut === true,
+      });
+    });
+  }
+
+  return variants;
+}
+
+/**
+ * Estado de una variante para mostrar: junta el stock con el "agotado"
+ * puesto a mano, que sigue mandando aunque haya unidades cargadas.
+ * Devuelve `null` si la variante no tiene inventario cargado, para que
+ * quien la muestre sepa distinguir "no controlo esto" de "hay cero".
+ */
+export function variantStatus(variant: CatalogVariant): StockStatus | null {
+  if (variant.soldOut) return "OUT_OF_STOCK";
+  if (!variant.inventory) return null;
+  return stockStatus(variant.inventory.stock, variant.inventory.minStock);
+}

@@ -3,6 +3,7 @@ import PageNumber from "../../PageNumber";
 import SwatchGroup from "../../SwatchGroup";
 import type { ProductVariant } from "@/data/schema";
 import SoldOutBadge from "../../SoldOutBadge";
+import BuyBar from "../../BuyBar";
 import { isVariantSoldOut, soldOutClass } from "../../soldOut";
 import "./zaraEditorial.css";
 
@@ -20,6 +21,7 @@ export default function ProductDetailPage({ variant }: ProductDetailPageProps) {
   return (
     <section className={`page layout-zara-editorial za-detail${soldOutClass(variant)}`} id={variant.id}>
       {isVariantSoldOut(variant) && <SoldOutBadge />}
+      <BuyBar />
       <div className="za-detail-image">
         {hero && <Image src={hero.src} alt={hero.alt} fill sizes="(max-width: 850px) 100vw, 65vw" style={{ objectFit: "cover" }} />}
       </div>

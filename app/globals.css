@@ -164,6 +164,11 @@ a {
 }
 
 /* ───── ENTRADA DE CADA PÁGINA (texto + fotos) ─────
+   `:not(.buy-bar)` en todos los selectores: la barra de compra es un
+   control, no contenido editorial. Animándola entraba con el resto y,
+   mientras duraba la animación, el botón asomaba por debajo del borde
+   de la página y `overflow: hidden` se lo comía. Un control tiene que
+   estar donde está desde el primer cuadro.
    La clase `page-anim` la pone components/catalog/ScrollReveal.tsx al
    montar, e `in-view` cuando la sección está en pantalla — se saca al
    salir, así que la entrada se repite subiendo y bajando. Como la
@@ -176,13 +181,13 @@ a {
    `translateX(-50%)`) o para el zoom en hover de las fotos del
    collage, y pisarlo desde acá los rompería — el mismo problema que
    ya está documentado para `.reveal.visible`. */
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar) {
   opacity: 0;
   translate: 0 22px;
   transition: opacity 0.75s ease, translate 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-.page.page-anim.in-view > *:not(.page-bg):not(.page-overlay):not(.reveal) {
+.page.page-anim.in-view > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar) {
   opacity: 1;
   translate: none;
 }
@@ -194,19 +199,19 @@ a {
    en vez de todos juntos de una pieza.
    Sirve para las 10 plantillas sin nombrar ni una: la regla mira la
    forma del árbol, no clases concretas de una plantilla. */
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) {
   opacity: 1;
   translate: none;
   transition: none;
 }
 
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:not(.reveal) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:not(.reveal) {
   opacity: 0;
   translate: 0 18px;
   transition: opacity 0.7s ease, translate 0.85s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-.page.page-anim.in-view > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:not(.reveal) {
+.page.page-anim.in-view > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:not(.reveal) {
   opacity: 1;
   translate: none;
 }
@@ -214,16 +219,16 @@ a {
 /* Escalonado dentro del contenedor (el precio suele ser el último).
    Mismo motivo que arriba para arrastrar los `:not(...)`: si no, la
    regla que fija `transition` gana y no hay escalonado. */
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:nth-child(2) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:nth-child(2) {
   transition-delay: 0.1s;
 }
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:nth-child(3) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:nth-child(3) {
   transition-delay: 0.2s;
 }
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:nth-child(4) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:nth-child(4) {
   transition-delay: 0.3s;
 }
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:nth-child(n + 5) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:nth-child(n + 5) {
   transition-delay: 0.38s;
 }
 
@@ -233,16 +238,16 @@ a {
    `transition` (atajo que incluye el retraso, o sea lo resetea a 0), así
    que estas tienen que ganarles en especificidad o el escalonado
    simplemente no ocurre — pasó exactamente eso al escribirlas cortas. */
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):nth-child(2) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):nth-child(2) {
   transition-delay: 0.08s;
 }
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):nth-child(3) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):nth-child(3) {
   transition-delay: 0.16s;
 }
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):nth-child(4) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):nth-child(4) {
   transition-delay: 0.24s;
 }
-.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):nth-child(n + 5) {
+.page.page-anim > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):nth-child(n + 5) {
   transition-delay: 0.32s;
 }
 
@@ -255,8 +260,8 @@ a {
    No se toca ninguna opacidad acá: la de destino ya la fijan las
    reglas de `in-view`, así que una opacidad de diseño (varias
    plantillas usan 0.85/0.92) sigue intacta. */
-.page.page-anim.anim-done > *:not(.page-bg):not(.page-overlay):not(.reveal),
-.page.page-anim.anim-done > *:not(.page-bg):not(.page-overlay):not(.reveal):has(> * + *) > *:not(.reveal),
+.page.page-anim.anim-done > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar),
+.page.page-anim.anim-done > *:not(.page-bg):not(.page-overlay):not(.reveal):not(.buy-bar):has(> * + *) > *:not(.reveal),
 .page.page-anim.anim-done img {
   transition: none;
 }
@@ -711,6 +716,180 @@ a {
     letter-spacing: 0.2em;
     padding: 6px 10px 6px 13px;
   }
+}
+
+/* ───── COMPRA POR WHATSAPP (solo con control de stock encendido) ───── */
+
+/* Igual que el cartel de agotado: se posiciona contra la `.page`, así
+   que la misma barra sirve para las 10 plantillas sin que ninguna sepa
+   de su existencia, y —clave— NO ocupa lugar en el flujo. Cada página
+   del catálogo tiene que entrar en una pantalla (es lo que sostiene el
+   scroll de página en página); agregar contenido en el flujo empujaría
+   el resto afuera, que es un bug que este proyecto ya arregló dos veces
+   en celulares. */
+.buy-bar {
+  /* Una sola fuente para el alto: la barra lo respeta y la página
+     reserva exactamente eso. Con dos números sueltos se desincronizan
+     —pasó: la barra se partía en dos filas y tapaba 36px de contenido
+     que la página creía tener libres. */
+  --buy-bar-h: 68px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* nowrap a propósito: si el botón se va a una segunda fila, la barra
+     crece y deja de calzar con el espacio reservado. */
+  flex-wrap: nowrap;
+  min-height: var(--buy-bar-h);
+  padding: 10px 18px;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: var(--paper);
+  backdrop-filter: blur(6px);
+}
+
+/* La barra flota sobre la página, así que hay que reservarle el lugar o
+   tapa lo último del contenido (el número de página, el final de la
+   descripción). Se le pide a la propia `.page`: con `box-sizing:
+   border-box` y `min-height: 100dvh`, esto NO agranda la página — le
+   achica el área de contenido, que es justo lo que se quiere. La foto
+   de fondo no se ve afectada porque va `position: absolute`.
+
+   `:has(> .buy-bar)` lo hace valer para las 10 plantillas sin tocar el
+   CSS de ninguna, y solo en las páginas que realmente tienen barra. */
+.page:has(> .buy-bar) {
+  padding-bottom: 68px;
+}
+
+.buy-bar-info {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.buy-bar-color {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buy-bar-color {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* El estado se dice con palabras además del color: no puede depender de
+   distinguir verde de ámbar. */
+.buy-bar-status {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.buy-bar-status.is-available {
+  background: #1f6b32;
+  color: #fff;
+}
+
+.buy-bar-status.is-low {
+  background: #b07d10;
+  color: #fff;
+}
+
+.buy-bar-status.is-out {
+  background: #8f2020;
+  color: #fff;
+}
+
+.buy-bar-action {
+  flex-shrink: 0;
+  padding: 11px 20px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 100px;
+  background: #25d366; /* el verde propio de WhatsApp: se reconoce antes de leer el texto */
+  color: #08300f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.buy-bar-action.is-disabled {
+  background: transparent;
+  color: color-mix(in srgb, var(--paper) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--paper) 40%, transparent);
+  cursor: not-allowed;
+}
+
+/* En pantallas angostas el nombre del color y su estado se apilan (uno
+   sobre otro) en vez de competir por el ancho con el botón, que es lo
+   único que no se puede achicar sin dejar de poder tocarse. */
+@media (max-width: 850px) {
+  .buy-bar {
+    padding: 8px 14px;
+  }
+
+  .buy-bar-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .buy-bar-color {
+    font-size: 0.75rem;
+  }
+
+  .buy-bar-action {
+    padding: 10px 14px;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+}
+
+/* En el PDF no hay nada que clickear: una barra de compra impresa solo
+   tapa la foto. Mismo criterio que el link de descarga del PDF. */
+@media print {
+  .buy-bar {
+    display: none !important;
+  }
+}
+
+/* El swatch pasa a ser un <button> cuando hay control de stock: hay que
+   sacarle el estilo propio de botón para que se siga viendo igual. */
+.swatch-selectable {
+  appearance: none;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+}
+
+/* Anillo del color elegido. `outline` y no `border`: un borde cambiaría
+   el tamaño de la caja y movería los swatches de al lado al
+   seleccionar. */
+.swatch-selected {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.swatch-selectable:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .rule {

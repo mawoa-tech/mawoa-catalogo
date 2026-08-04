@@ -1,5 +1,6 @@
 import { LAYOUTS } from "./layouts";
-import type { Block, LayoutId } from "@/data/schema";
+import { VariantProvider } from "./VariantContext";
+import type { Block, CatalogInventory, LayoutId } from "@/data/schema";
 
 type BlockRendererProps = {
   block: Block;
@@ -7,6 +8,10 @@ type BlockRendererProps = {
   layoutId: LayoutId;
   /** Solo lo usa el bloque "closing" — ver ClosingPage. */
   pdfHref?: string;
+  /** Control de stock del catálogo. Ausente = el catálogo no lo usa y nada cambia. */
+  inventory?: CatalogInventory;
+  /** SKU de los colores de este bloque, si es una página de producto (ver CatalogRenderer). */
+  skus?: string[];
 };
 
 /**
@@ -16,7 +21,7 @@ type BlockRendererProps = {
  * nuevo sin manejarlo acá sea un error de compilación, no un bug
  * silencioso en producción.
  */
-export default function BlockRenderer({ block, layoutId, pdfHref }: BlockRendererProps) {
+export default function BlockRenderer({ block, layoutId, pdfHref, inventory, skus }: BlockRendererProps) {
   const L = LAYOUTS[layoutId];
   switch (block.type) {
     case "cover":
@@ -28,7 +33,14 @@ export default function BlockRenderer({ block, layoutId, pdfHref }: BlockRendere
     case "chapterHero":
       return <L.ChapterHero data={block.data} />;
     case "productDetail":
-      return <L.ProductDetailPage variant={block.data} />;
+      // El proveedor va acá y no dentro de cada plantilla: es el único
+      // lugar por el que pasan las 10, así que ninguna necesita saber
+      // que el inventario existe (ni las que se agreguen después).
+      return (
+        <VariantProvider variant={block.data} inventory={inventory} skus={skus}>
+          <L.ProductDetailPage variant={block.data} />
+        </VariantProvider>
+      );
     case "closing":
       return <L.ClosingPage data={block.data} pdfHref={pdfHref} />;
     default: {

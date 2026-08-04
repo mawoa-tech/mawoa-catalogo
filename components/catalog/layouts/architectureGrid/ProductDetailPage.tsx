@@ -3,6 +3,7 @@ import PageNumber from "../../PageNumber";
 import SwatchGroup from "../../SwatchGroup";
 import type { ProductVariant } from "@/data/schema";
 import SoldOutBadge from "../../SoldOutBadge";
+import BuyBar from "../../BuyBar";
 import { isVariantSoldOut, soldOutClass } from "../../soldOut";
 import "./architectureGrid.css";
 
@@ -21,6 +22,7 @@ export default function ProductDetailPage({ variant }: ProductDetailPageProps) {
   return (
     <section className={`page layout-architecture-grid ag-detail${soldOutClass(variant)}`} id={variant.id}>
       {isVariantSoldOut(variant) && <SoldOutBadge />}
+      <BuyBar />
       <div className="ag-detail-grid">
         {p1 && (
           <div className="ag-cell ag-cell-photo1">

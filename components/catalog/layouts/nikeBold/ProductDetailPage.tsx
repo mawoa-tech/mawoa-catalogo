@@ -3,6 +3,7 @@ import PageNumber from "../../PageNumber";
 import SwatchGroup from "../../SwatchGroup";
 import type { ProductVariant } from "@/data/schema";
 import SoldOutBadge from "../../SoldOutBadge";
+import BuyBar from "../../BuyBar";
 import { isVariantSoldOut, soldOutClass } from "../../soldOut";
 import "./nikeBold.css";
 
@@ -21,6 +22,7 @@ export default function ProductDetailPage({ variant }: ProductDetailPageProps) {
   return (
     <section className={`page layout-nike-bold nk-detail${soldOutClass(variant)}`} id={variant.id}>
       {isVariantSoldOut(variant) && <SoldOutBadge />}
+      <BuyBar />
       <div className="nk-detail-hero">
         {hero && <Image src={hero.src} alt={hero.alt} fill sizes="100vw" style={{ objectFit: "cover" }} />}
       </div>

@@ -3,6 +3,7 @@ import PageNumber from "../../PageNumber";
 import SwatchGroup from "../../SwatchGroup";
 import type { ProductVariant } from "@/data/schema";
 import SoldOutBadge from "../../SoldOutBadge";
+import BuyBar from "../../BuyBar";
 import { isVariantSoldOut, soldOutClass } from "../../soldOut";
 import "./japaneseMinimal.css";
 
@@ -21,6 +22,7 @@ export default function ProductDetailPage({ variant }: ProductDetailPageProps) {
   return (
     <section className={`page layout-japanese-minimal jp-detail${soldOutClass(variant)}`} id={variant.id}>
       {isVariantSoldOut(variant) && <SoldOutBadge />}
+      <BuyBar />
       <span className="jp-mark" aria-hidden="true" />
       <div className="jp-detail-text">
         <h3>{variant.name}</h3>

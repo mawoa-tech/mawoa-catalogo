@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useAssets, type ClientAsset } from "./AssetsContext";
 import { recordDriveLinkAction, deleteAssetAction } from "@/app/admin/actions";
 import { uploadFile, replaceFile } from "@/lib/uploadClient";
-import { CLOUD_SOURCES, type CloudSource } from "@/lib/cloudSources";
+import { CLOUD_SOURCES, type CloudSource, type CloudPickedFile } from "@/lib/cloudSources";
+import CloudBrowser from "./CloudBrowser";
 import type { DriveLink } from "@/lib/driveLinks";
 import { useToast } from "./ToastContext";
 import { useConfirm } from "./ConfirmDialogContext";
@@ -41,6 +42,8 @@ export default function AssetGallery({ selectedPath, onPick, onUploaded, onUploa
   const [syncingPath, setSyncingPath] = useState<string | null>(null);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [cloudLoadingId, setCloudLoadingId] = useState<string | null>(null);
+  /** Proveedor cuyo explorador está abierto (null = ninguno). */
+  const [browsingSource, setBrowsingSource] = useState<CloudSource | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,12 +117,11 @@ export default function AssetGallery({ selectedPath, onPick, onUploaded, onUploa
    * use esta grilla. Selecciona la primera imagen importada, igual que
    * subir un archivo local.
    */
-  const importFromCloud = async (source: CloudSource) => {
+  const importFromCloud = async (source: CloudSource, picked: CloudPickedFile[]) => {
     setUploadError(null);
     setCloudLoadingId(source.id);
     try {
-      const picked = await source.pickImages();
-      if (picked.length === 0) return; // canceló sin elegir nada, no es un error
+      if (picked.length === 0) return; // cerró sin elegir nada, no es un error
       let firstPath: string | null = null;
       for (const file of picked) {
         const res = await uploadFile(new File([file.blob], file.name, { type: file.blob.type }), catalogId);
@@ -356,7 +358,7 @@ export default function AssetGallery({ selectedPath, onPick, onUploaded, onUploa
                 key={source.id}
                 type="button"
                 className="admin-btn"
-                onClick={() => importFromCloud(source)}
+                onClick={() => setBrowsingSource(source)}
                 disabled={!configured || cloudLoadingId !== null}
                 title={configured ? undefined : source.unconfiguredReason?.()}
               >
@@ -378,6 +380,14 @@ export default function AssetGallery({ selectedPath, onPick, onUploaded, onUploa
         />
       </div>
       {uploadError && <p className="admin-save-message error">{uploadError}</p>}
+
+      {browsingSource && (
+        <CloudBrowser
+          source={browsingSource}
+          onPicked={(files) => importFromCloud(browsingSource, files)}
+          onClose={() => setBrowsingSource(null)}
+        />
+      )}
     </>
   );
 }

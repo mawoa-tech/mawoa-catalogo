@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { recordDriveLinkAction } from "@/app/admin/actions";
 import { uploadFile } from "@/lib/uploadClient";
 import { useAssets } from "../AssetsContext";
-import { CLOUD_SOURCES, type CloudSource } from "@/lib/cloudSources";
+import { CLOUD_SOURCES, type CloudSource, type CloudPickedFile } from "@/lib/cloudSources";
+import CloudBrowser from "../CloudBrowser";
 import type { DriveLink } from "@/lib/driveLinks";
 
 export type WizardImage = { path: string; previewUrl: string };
@@ -34,6 +35,8 @@ export default function StepImages({ images, onChange, slotCount, catalogId }: S
   const [error, setError] = useState<string | null>(null);
   const [dragOverDropzone, setDragOverDropzone] = useState(false);
   const [cloudLoadingId, setCloudLoadingId] = useState<string | null>(null);
+  /** Proveedor cuyo explorador está abierto (null = ninguno). */
+  const [browsingSource, setBrowsingSource] = useState<CloudSource | null>(null);
   const dragIndexRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,16 +71,15 @@ export default function StepImages({ images, onChange, slotCount, catalogId }: S
     setUploading(false);
   };
 
-  // Cada foto elegida en el picker del proveedor ya llega con su Blob y
-  // una previewUrl propia (lib/cloudSources/*) — de ahí en más sube
+  // Cada foto elegida en el explorador ya llega con su Blob y una
+  // previewUrl propia (lib/cloudSources/*) — de ahí en más sube
   // exactamente igual que un archivo local: mismo uploadFile, mismo
   // commit real a GitHub.
-  const importFromCloud = async (source: CloudSource) => {
+  const importFromCloud = async (source: CloudSource, picked: CloudPickedFile[]) => {
     setError(null);
     setCloudLoadingId(source.id);
     try {
-      const picked = await source.pickImages();
-      if (picked.length === 0) return; // canceló sin elegir nada, no es un error
+      if (picked.length === 0) return; // cerró sin elegir nada, no es un error
       let current = images;
       for (const file of picked) {
         const res = await uploadFile(new File([file.blob], file.name, { type: file.blob.type }), catalogId);
@@ -186,7 +188,7 @@ export default function StepImages({ images, onChange, slotCount, catalogId }: S
                 key={source.id}
                 type="button"
                 className="admin-btn"
-                onClick={() => importFromCloud(source)}
+                onClick={() => setBrowsingSource(source)}
                 disabled={!configured || cloudLoadingId !== null}
                 title={configured ? undefined : source.unconfiguredReason?.()}
               >
@@ -241,6 +243,14 @@ export default function StepImages({ images, onChange, slotCount, catalogId }: S
             </div>
           ))}
         </div>
+      )}
+
+      {browsingSource && (
+        <CloudBrowser
+          source={browsingSource}
+          onPicked={(files) => importFromCloud(browsingSource, files)}
+          onClose={() => setBrowsingSource(null)}
+        />
       )}
     </div>
   );

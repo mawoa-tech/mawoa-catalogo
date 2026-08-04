@@ -3,6 +3,7 @@ import PageNumber from "../../PageNumber";
 import SwatchGroup from "../../SwatchGroup";
 import type { ProductVariant } from "@/data/schema";
 import SoldOutBadge from "../../SoldOutBadge";
+import BuyBar from "../../BuyBar";
 import { isVariantSoldOut, soldOutClass } from "../../soldOut";
 import "./editorialLux.css";
 
@@ -22,6 +23,7 @@ export default function ProductDetailPage({ variant }: ProductDetailPageProps) {
   return (
     <section className={`page layout-editorial-lux ed-detail${soldOutClass(variant)}`} id={variant.id}>
       {isVariantSoldOut(variant) && <SoldOutBadge />}
+      <BuyBar />
       <div className="ed-detail-image">
         {hero && (
           <Image

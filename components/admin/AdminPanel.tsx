@@ -6,12 +6,14 @@ import CatalogRenderer from "@/components/catalog/CatalogRenderer";
 import PreviewFrame from "./PreviewFrame";
 import TextColorPopover from "./TextColorPopover";
 import { findPaintableElement, resolveTextColorTarget, type TextColorTarget } from "./textColorTarget";
-import type { Block, CatalogTheme, LayoutId } from "@/data/schema";
+import type { Block, CatalogInventory, CatalogTheme, LayoutId } from "@/data/schema";
 
 type AdminPanelProps = {
   blocks: Block[];
   theme: CatalogTheme;
   layoutId: LayoutId;
+  /** Control de stock del catálogo: la vista previa tiene que mostrar la barra de compra igual que el sitio público. */
+  inventory?: CatalogInventory;
   title: string;
   /**
    * Pinta (o despinta, con `color: null`) un texto puntual de una
@@ -47,6 +49,7 @@ export default function AdminPanel({
   blocks,
   theme,
   layoutId,
+  inventory,
   title,
   onTextColorChange,
   topbarActions,
@@ -234,7 +237,7 @@ export default function AdminPanel({
           url={`${typeof window === "undefined" ? "" : window.location.host}/catalog/${title}`}
           onDocumentReady={handlePreviewDocument}
         >
-          <CatalogRenderer blocks={withPageNumbers} theme={theme} layoutId={layoutId} />
+          <CatalogRenderer blocks={withPageNumbers} theme={theme} layoutId={layoutId} inventory={inventory} />
         </PreviewFrame>
       </div>
 

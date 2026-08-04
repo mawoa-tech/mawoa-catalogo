@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
-import type { Block, CatalogTheme, LayoutId } from "@/data/schema";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
+import type { Block, CatalogInventory, CatalogTheme, LayoutId } from "@/data/schema";
+import { catalogVariants } from "@/data/schema";
 import BlockList, { type EditableBlock } from "./BlockList";
 import BlockForm from "./BlockForm";
 import AddPageChooser from "./AddPageChooser";
 import AdminPanel from "./AdminPanel";
 import AssetGallery from "./AssetGallery";
 import Glossary from "./Glossary";
+import InventorySettings from "./InventorySettings";
+import { InventoryProvider } from "./InventoryContext";
 import ThemeEditor from "./fields/ThemeEditor";
 import { useToast } from "./ToastContext";
 import { saveCatalogAction } from "@/app/admin/actions";
@@ -34,13 +37,14 @@ function makeKey(): string {
     : Math.random().toString(36).slice(2);
 }
 
-type Tab = "portada" | "paginas" | "imagenes" | "colores" | "ayuda";
+type Tab = "portada" | "paginas" | "imagenes" | "colores" | "inventario" | "ayuda";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "portada", label: "Portada" },
   { id: "paginas", label: "Páginas" },
   { id: "imagenes", label: "Imágenes" },
   { id: "colores", label: "Colores" },
+  { id: "inventario", label: "Inventario" },
   { id: "ayuda", label: "Ayuda" },
 ];
 
@@ -50,6 +54,8 @@ type AdminEditorProps = {
   initialTheme: CatalogTheme;
   /** Fijo al crear el catálogo (ver lib/newCatalog.ts) — no hay campo para editarlo acá a propósito: cambiarlo después podría dejar contenido que no calza con los supuestos visuales del layout nuevo. */
   layoutId: LayoutId;
+  /** Ausente = este catálogo no usa control de stock (el caso de todo lo publicado hasta ahora). */
+  initialInventory?: CatalogInventory;
   /** Acciones que tienen que seguir alcanzables aunque el panel esté colapsado (volver al listado, cerrar sesión) — vienen de app/admin/[id]/page.tsx, que sí sabe de <Link>/LogoutButton. */
   topbarActions?: ReactNode;
 };
@@ -61,12 +67,14 @@ export default function AdminEditor({
   initialBlocks,
   initialTheme,
   layoutId,
+  initialInventory,
   topbarActions,
 }: AdminEditorProps) {
   const [items, setItems] = useState<EditableBlock[]>(() =>
     initialBlocks.map((block) => ({ key: makeKey(), block }))
   );
   const [theme, setTheme] = useState<CatalogTheme>(initialTheme);
+  const [inventory, setInventory] = useState<CatalogInventory | undefined>(initialInventory);
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<SaveResult | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -177,6 +185,27 @@ export default function AdminEditor({
   const defaultProductName = heroBlock?.type === "productHero" ? heroBlock.data.name : "";
   const defaultProductType = heroBlock?.type === "productHero" ? heroBlock.data.type : "";
 
+  /**
+   * Los SKU se resuelven UNA vez sobre el catálogo completo y se
+   * reparten ya listos: es la única forma de desempatar dos colores que
+   * abrevian igual (cada campo por separado no ve al resto). Se
+   * recalcula al tipear, que es exactamente lo que hace falta para que
+   * el código mostrado siga al nombre mientras se edita.
+   */
+  const inventoryContext = useMemo(() => {
+    const enabled = inventory?.enabled === true;
+    const bySlot = new Map<string, string>();
+    if (enabled) {
+      for (const variant of catalogVariants(items.map((item) => item.block))) {
+        bySlot.set(`${variant.pageId}\u0000${variant.swatchIndex}`, variant.sku);
+      }
+    }
+    return {
+      enabled,
+      skuOf: (pageId: string, swatchIndex: number) => bySlot.get(`${pageId}\u0000${swatchIndex}`) ?? "",
+    };
+  }, [inventory?.enabled, items]);
+
   const handleSave = () => {
     setResult(null);
     startTransition(async () => {
@@ -184,7 +213,8 @@ export default function AdminEditor({
         catalogId,
         theme,
         items.map((item) => item.block),
-        layoutId
+        layoutId,
+        inventory
       );
       setResult(res);
       if (res.ok) showToast("Guardado ✓");
@@ -196,12 +226,14 @@ export default function AdminEditor({
       blocks={items.map((item) => item.block)}
       theme={theme}
       layoutId={layoutId}
+      inventory={inventory}
       title={catalogId}
       onTextColorChange={setTextColor}
       topbarActions={topbarActions}
       open={panelOpen}
       onOpenChange={setPanelOpen}
     >
+      <InventoryProvider value={inventoryContext}>
       <div className="admin-idstrip">
         <p className="admin-idstrip-name">{catalogId}</p>
         <p className="admin-idstrip-meta">
@@ -252,6 +284,8 @@ export default function AdminEditor({
 
         {tab === "colores" && <ThemeEditor theme={theme} onChange={setTheme} />}
 
+        {tab === "inventario" && <InventorySettings inventory={inventory} onChange={setInventory} />}
+
         {tab === "ayuda" && <Glossary />}
       </div>
 
@@ -286,6 +320,7 @@ export default function AdminEditor({
             </div>
           ))}
       </div>
+      </InventoryProvider>
     </AdminPanel>
   );
 }

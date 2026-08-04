@@ -3,6 +3,7 @@ import Collage from "./Collage";
 import SwatchGroup from "./SwatchGroup";
 import type { ProductVariant } from "@/data/schema";
 import SoldOutBadge from "./SoldOutBadge";
+import BuyBar from "./BuyBar";
 import { isVariantSoldOut, soldOutClass } from "./soldOut";
 
 type ProductDetailPageProps = {
@@ -18,6 +19,7 @@ export default function ProductDetailPage({ variant }: ProductDetailPageProps) {
   return (
     <section className={`page detail${soldOutClass(variant)}`} id={variant.id}>
       {isVariantSoldOut(variant) && <SoldOutBadge />}
+      <BuyBar />
       <Collage images={variant.collageImages} layout={variant.collageLayout} />
       <div className="info">
         <div className="info-head">
