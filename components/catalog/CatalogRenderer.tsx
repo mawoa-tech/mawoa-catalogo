@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import ScrollProgress from "./ScrollProgress";
 import ScrollReveal from "./ScrollReveal";
+import PageSwipe from "./PageSwipe";
 import BlockRenderer from "./BlockRenderer";
 import { LiveStockProvider } from "./LiveStockContext";
 import { catalogVariants, type CatalogVariant } from "@/data/schema";
@@ -126,6 +127,7 @@ export default function CatalogRenderer({
       {customTextColors && <style>{customTextColors}</style>}
       <ScrollProgress />
       <ScrollReveal />
+      <PageSwipe />
       <LiveStockProvider catalogId={inventory?.enabled ? catalogId : undefined}>
       {blocks.map((block, i) => (
         <BlockRenderer

@@ -123,10 +123,35 @@ a {
   position: relative;
   min-height: 100dvh;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
   overflow: hidden;
   isolation: isolate;
   background: #111;
+}
+
+/* `scroll-snap-stop: always` SOLO donde el gesto es discreto (rueda o
+   teclado). En pantalla táctil convierte cada página en una parada dura:
+   medido con gestos reales, un deslizamiento largo y rápido (900px a
+   3000px/s) avanzaba UNA página igual que uno mediano, y uno corto no
+   avanzaba nada — que es exactamente el "se traba" reportado. Sin la
+   parada, la inercia recorre varias páginas y el anclaje obligatorio
+   igual la deja calzada en una: se conserva el scroll de página en
+   página, se pierde solo el freno. */
+@media (hover: hover) and (pointer: fine) {
+  .page {
+    scroll-snap-stop: always;
+  }
+}
+
+/* En táctil el anclaje nativo se apaga y lo maneja PageSwipe: medido con
+   gestos reales, `mandatory` no avanzaba con un deslizamiento corto y
+   nunca avanzaba más de una página por más fuerte que fuera el gesto —
+   el "se traba" reportado. Si el JavaScript no llegara a montar, el
+   catálogo queda con scroll libre normal: se pierde el calce por página,
+   nunca la posibilidad de recorrerlo. */
+@media (pointer: coarse) {
+  html {
+    scroll-snap-type: none;
+  }
 }
 
 .page-bg {

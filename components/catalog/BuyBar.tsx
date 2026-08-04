@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { StockStatus } from "@/data/schema";
 import { useVariantSelection } from "./VariantContext";
@@ -88,6 +88,24 @@ function whatsappHref(
  */
 export default function BuyBar() {
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  /**
+   * Con el panel abierto, el catálogo de atrás no se mueve. Sin esto,
+   * deslizar sobre el panel scrolleaba la página de fondo (medido: se
+   * corría 198px), que es el comportamiento clásico de un modal mal
+   * hecho. Se toca el documento del propio panel y no `document` a
+   * secas por el iframe de la vista previa del admin.
+   */
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const el = document.documentElement;
+    const previo = el.style.overflow;
+    el.style.overflow = "hidden";
+    return () => {
+      el.style.overflow = previo;
+    };
+  }, [sheetOpen]);
+
   const selection = useVariantSelection();
   if (!selection) return null;
 
