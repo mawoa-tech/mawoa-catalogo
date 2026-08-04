@@ -2627,3 +2627,26 @@
   border-radius: 6px;
   cursor: pointer;
 }
+
+/* El selector de vista vive en la barra superior en escritorio y en el
+   encabezado del panel en celular: ahí el panel ocupa toda la pantalla y
+   la barra superior queda con ancho cero, así que el control era
+   inalcanzable justo en el dispositivo que se quiere previsualizar. */
+.admin-viewport-toggle--panel {
+  display: none;
+}
+
+@media (max-width: 850px) {
+  .admin-viewport-toggle--topbar {
+    display: none;
+  }
+
+  .admin-viewport-toggle--panel {
+    display: inline-flex;
+  }
+
+  .admin-panel-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

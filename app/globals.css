@@ -55,14 +55,11 @@
    abajo, donde se ajustan manifiesto y detalle justamente para eso. */
 html {
   scroll-behavior: smooth;
-  /* `proximity` y no `mandatory` (cambiado el 2026-08-04, por uso real):
-     con `mandatory` el navegador OBLIGA a terminar cada gesto calzado en
-     una página, así que un arrastre corto te devuelve a la que estabas y
-     se siente como si la pantalla se trabara. `proximity` ancla solo
-     cuando el gesto quedó cerca de un borde y deja pasar el resto, que
-     es lo que se pedía. Se conserva `scroll-snap-stop: always` en
-     `.page`, así que sigue sin poder saltearse una página de un tirón. */
-  scroll-snap-type: y proximity;
+  /* `mandatory`: el scroll va de página en página, que es lo que se
+     pidió explícitamente (se probó `proximity` el 2026-08-04 y se
+     volvió atrás: dejaba páginas a medias). La contrapartida conocida
+     es que un arrastre muy corto vuelve a calzar en la página actual. */
+  scroll-snap-type: y mandatory;
 }
 
 body {
@@ -485,7 +482,10 @@ a {
   grid-auto-rows: 1fr;
   gap: 2px;
   background: #e8e4de;
-  flex: 7 1 0;
+  /* Las fotos son lo que la página tiene para mostrar: se llevan tres
+     cuartos de la altura. El resto le alcanza a `.info`, que se recorta
+     sola si hiciera falta (overflow: hidden más abajo). */
+  flex: 8 1 0;
   min-height: 0;
 }
 
@@ -529,7 +529,7 @@ a {
   padding: 34px 42px 50px;
   position: relative;
   overflow: hidden;
-  flex: 3 1 0;
+  flex: 2.6 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -804,64 +804,10 @@ html:not(:has(.page-anim)) .buy-bar {
 }
 
 /* Talla y corte NO viven en la barra: se eligen en un panel que se abre
-   encima (`.buy-sheet`). La primera versión los ponía adentro y la barra
-   pasaba de 68px a 184px, tapando las fotos del producto — que es lo que
-   la página tiene para mostrar. Así el alto de la barra vuelve a ser uno
-   solo, y el espacio reservado por `.page` también. */
-.buy-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* Sólido y con la miniatura del corte, no un contorno tenue: en el uso
-   real "no se veía" que ahí se elegía algo. */
-.buy-bar-chooser {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 5px 12px 5px 5px;
-  border: none;
-  border-radius: 100px;
-  background: color-mix(in srgb, var(--buy-bar-fg, var(--paper)) 18%, transparent);
-  color: var(--buy-bar-fg, var(--paper));
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.buy-bar-chooser:not(:has(img)) {
-  padding-left: 14px;
-}
-
-.buy-bar-chooser img {
-  width: 34px;
-  height: 34px;
-  border-radius: 100px;
-  object-fit: cover;
-  display: block;
-}
-
-.buy-bar-chooser-caret {
-  opacity: 0.7;
-  font-size: 0.6rem;
-}
-
-/* En pantallas angostas el nombre del corte puede no entrar junto al
-   botón de compra: se recorta el texto, nunca el control. */
-@media (max-width: 430px) {
-  .buy-bar-chooser-text {
-    max-width: 78px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
+   encima (`.buy-sheet`). Primero estuvieron adentro y la barra pasaba de
+   68px a 184px tapando las fotos; después quedó un control aparte para
+   abrirlos, que en celular se montaba encima de la etiqueta de estado.
+   Ahora la barra tiene UN control y el panel resuelve elegir y comprar. */
 
 /* ---- Panel de elección (corte y talla) ----
    `position: fixed`: queda fuera del flujo de la página, así que no
@@ -1039,7 +985,23 @@ html:not(:has(.page-anim)) .buy-bar {
   text-decoration: line-through;
 }
 
+.buy-sheet-done.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* El texto de la barra se recorta antes que empujar al botón. */
+.buy-bar-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .buy-sheet-done {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.2;
+  padding: 15px 16px;
   margin-top: 14px;
   min-height: 46px;
   border: none;
@@ -1056,7 +1018,7 @@ html:not(:has(.page-anim)) .buy-bar {
 
 .buy-bar-info {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   min-width: 0;
 }
@@ -1353,9 +1315,9 @@ html:not(:has(.page-anim)) .buy-bar {
      altura de la sección entera rompiendo el scroll-snap. */
   .info {
     flex: 0 0 auto;
-    max-height: 62%;
+    max-height: 55%;
     justify-content: flex-start;
-    padding: 22px 18px 44px;
+    padding: 18px 18px 30px;
   }
 
   .collage {

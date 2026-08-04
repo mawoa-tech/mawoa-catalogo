@@ -72,7 +72,10 @@ export default function AdminPanel({
   // pasan por PreviewFrame, que resuelve las media queries contra las
   // medidas reales del dispositivo. Es solo una preferencia de
   // visualización: no toca el contenido ni lo que se guarda.
-  const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
+  // Arranca en móvil: es como mira el catálogo la mayoría de quienes lo
+  // reciben (llega por WhatsApp), así que es la vista que hay que
+  // controlar primero. Escritorio queda a un toque.
+  const [viewport, setViewport] = useState<"desktop" | "mobile">("mobile");
 
   // `onOpenChange` va por un ref, no directo en las deps del efecto de
   // abajo — bug real encontrado en el asistente de creación: ahí se le
@@ -209,6 +212,36 @@ export default function AdminPanel({
 
   if (!mounted) return null;
 
+  /**
+   * El mismo control en dos lugares: la barra superior (escritorio) y el
+   * encabezado del panel (celular). Hace falta porque en celular el
+   * panel ocupa toda la pantalla y la barra superior se achica a cero
+   * mientras está abierto — o sea, siempre —, así que el selector de
+   * vista quedaba inalcanzable justo en el dispositivo que se quiere
+   * previsualizar. Una sola definición, dos montajes; el CSS esconde el
+   * que no corresponde a cada tamaño.
+   */
+  const renderViewportToggle = (className: string) => (
+    <div className={className} role="group" aria-label="Tamaño de la vista previa">
+      <button
+        type="button"
+        className={viewport === "mobile" ? "is-active" : ""}
+        onClick={() => setViewport("mobile")}
+        aria-pressed={viewport === "mobile"}
+      >
+        Móvil
+      </button>
+      <button
+        type="button"
+        className={viewport === "desktop" ? "is-active" : ""}
+        onClick={() => setViewport("desktop")}
+        aria-pressed={viewport === "desktop"}
+      >
+        Escritorio
+      </button>
+    </div>
+  );
+
   return createPortal(
     <>
       <div
@@ -266,24 +299,7 @@ export default function AdminPanel({
               la página, en móvil dentro del iframe), así que se pierde la
               posición de scroll. Es aceptable: es un cambio explícito de
               "cómo lo estoy mirando", no algo que pase solo. */}
-          <div className="admin-viewport-toggle" role="group" aria-label="Tamaño de la vista previa">
-            <button
-              type="button"
-              className={viewport === "desktop" ? "is-active" : ""}
-              onClick={() => setViewport("desktop")}
-              aria-pressed={viewport === "desktop"}
-            >
-              Escritorio
-            </button>
-            <button
-              type="button"
-              className={viewport === "mobile" ? "is-active" : ""}
-              onClick={() => setViewport("mobile")}
-              aria-pressed={viewport === "mobile"}
-            >
-              Móvil
-            </button>
-          </div>
+          {renderViewportToggle("admin-viewport-toggle admin-viewport-toggle--topbar")}
           {topbarActions}
         </div>
       </div>
@@ -303,6 +319,7 @@ export default function AdminPanel({
           >
             <div className="admin-panel-header">
               <p className="admin-panel-header-title">Editar contenido</p>
+              {renderViewportToggle("admin-viewport-toggle admin-viewport-toggle--panel")}
               <button
                 type="button"
                 className="admin-panel-close"

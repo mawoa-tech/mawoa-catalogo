@@ -99,74 +99,67 @@ export default function BuyBar() {
   const canBuy = !soldOut && Boolean(selection.whatsappPhone);
   const hasOptions = selection.sizes.length > 0 || selection.cuts.length > 0;
 
-  const chosen = [selection.selectedCut, selection.selectedSize].filter(Boolean).join(" · ");
-  const currentCutImage = selection.cuts.find((c) => c.label === selection.selectedCut)?.image;
+  const chosenParts = [selection.selectedCut, selection.selectedSize].filter(Boolean) as string[];
+
+  const buildHref = (origin?: string) =>
+    whatsappHref(
+      selection.whatsappPhone ?? "",
+      selection.productName,
+      current.label,
+      selection.selectedSize,
+      selection.selectedCut,
+      selection.photo,
+      origin
+    );
 
   return (
     <>
       <div className="buy-bar">
         <div className="buy-bar-info">
-          <span className="buy-bar-color">{current.label}</span>
+          {/* Lo elegido en una sola línea que se recorta si no entra. La
+              versión anterior tenía además un control aparte para elegir
+              talla/corte, y en celular se montaba encima de la etiqueta
+              de estado. Ahora la barra tiene UN control. */}
+          <span className="buy-bar-color">{[current.label, ...chosenParts].join(" · ")}</span>
           <span className={`buy-bar-status ${STATUS_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
         </div>
 
-        <div className="buy-bar-right">
-          {hasOptions && (
-            <button
-              type="button"
-              className="buy-bar-chooser"
-              onClick={() => setSheetOpen(true)}
-              aria-haspopup="dialog"
-            >
-              {/* La miniatura del corte elegido delante del texto: es lo
-                  que hace evidente que acá se elige algo. Sin ella el
-                  control se leía como una etiqueta y no como un botón. */}
-              {currentCutImage && <Image src={currentCutImage} alt="" width={64} height={64} />}
-              <span className="buy-bar-chooser-text">{chosen || "Elegir talla"}</span>
-              <span className="buy-bar-chooser-caret" aria-hidden="true">▾</span>
-            </button>
-          )}
-
-          {canBuy ? (
-            <a
-              className="buy-bar-action"
-              href={whatsappHref(
-                selection.whatsappPhone as string,
-                selection.productName,
-                current.label,
-                selection.selectedSize,
-                selection.selectedCut,
-                selection.photo
-              )}
-              // El enlace se completa con la foto recién acá, con el
-              // origen real del navegador (ver whatsappHref). Asignar
-              // `href` dentro del handler alcanza: la navegación ocurre
-              // después de que el handler termina.
-              onClick={(e) => {
-                e.currentTarget.href = whatsappHref(
-                  selection.whatsappPhone as string,
-                  selection.productName,
-                  current.label,
-                  selection.selectedSize,
-                  selection.selectedCut,
-                  selection.photo,
-                  window.location.origin
-                );
-              }}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Comprar
-            </a>
-          ) : (
-            // Un botón deshabilitado y no la ausencia del botón: si
-            // desaparece, no se entiende por qué esta combinación no se
-            // puede comprar y otras sí.
-            <span className="buy-bar-action is-disabled" aria-disabled="true">
-              {soldOut ? "Agotado" : "No disponible"}
-            </span>
-          )}
-        </div>
+        {hasOptions ? (
+          // Con tallas o cortes el botón abre el panel: elegir y comprar
+          // en dos pasos claros es más simple que tres controles
+          // apretados en una barra de 68px.
+          <button
+            type="button"
+            className={`buy-bar-action${canBuy ? "" : " is-muted"}`}
+            onClick={() => setSheetOpen(true)}
+            aria-haspopup="dialog"
+          >
+            Elegir y comprar
+          </button>
+        ) : canBuy ? (
+          <a
+            className="buy-bar-action"
+            href={buildHref()}
+            // El enlace se completa con la foto recién acá, con el
+            // origen real del navegador (ver whatsappHref). Asignar
+            // `href` dentro del handler alcanza: la navegación ocurre
+            // después de que el handler termina.
+            onClick={(e) => {
+              e.currentTarget.href = buildHref(window.location.origin);
+            }}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Comprar
+          </a>
+        ) : (
+          // Un botón deshabilitado y no la ausencia del botón: si
+          // desaparece, no se entiende por qué esta combinación no se
+          // puede comprar y otras sí.
+          <span className="buy-bar-action is-disabled" aria-disabled="true">
+            {soldOut ? "Agotado" : "No disponible"}
+          </span>
+        )}
       </div>
 
       {sheetOpen && hasOptions && (
@@ -234,9 +227,24 @@ export default function BuyBar() {
               )}
             </div>
 
-            <button type="button" className="buy-sheet-done" onClick={() => setSheetOpen(false)}>
-              {soldOut ? "Cerrar" : `Listo — ${STATUS_LABEL[status]}`}
-            </button>
+            {canBuy ? (
+              <a
+                className="buy-sheet-done"
+                href={buildHref()}
+                onClick={(e) => {
+                  e.currentTarget.href = buildHref(window.location.origin);
+                  setSheetOpen(false);
+                }}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Comprar por WhatsApp
+              </a>
+            ) : (
+              <span className="buy-sheet-done is-disabled" aria-disabled="true">
+                {soldOut ? "Esta combinación está agotada" : "No disponible"}
+              </span>
+            )}
           </div>
         </div>
       )}
