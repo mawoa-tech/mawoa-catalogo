@@ -78,7 +78,31 @@
               "minStock": 3
             }
           }
-        ]
+        ],
+        "sizes": [
+          "S",
+          "m",
+          "l"
+        ],
+        "cuts": [
+          {
+            "label": "hilo",
+            "image": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/julia-botones-20260802-d23e961f.webp"
+          },
+          {
+            "label": "semi",
+            "image": "https://vmoehgook5x4lup4.public.blob.vercel-storage.com/imagenes/julia-botones-20260802-3cf84b12.webp"
+          }
+        ],
+        "stock": {
+          "JULIABOTONES-NEG-S-HIL": 3,
+          "JULIABOTONES-NEG-S-SEM": 1,
+          "JULIABOTONES-NEG-M-HIL": 3,
+          "JULIABOTONES-NEG-M-SEM": 3,
+          "JULIABOTONES-NEG-L-HIL": 1,
+          "JULIABOTONES-NEG-L-SEM": 1
+        },
+        "minStock": 2
       }
     },
     {
@@ -146,7 +170,7 @@
             "color": "#f2e4d8",
             "inventory": {
               "price": 70,
-              "stock": 0,
+              "stock": 6,
               "minStock": 3
             }
           }
