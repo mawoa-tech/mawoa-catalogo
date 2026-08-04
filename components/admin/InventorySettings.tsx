@@ -54,6 +54,18 @@ export default function InventorySettings({ inventory, onChange }: InventorySett
     onChange(next);
   };
 
+  /**
+   * Se acepta pegar la URL entera de la hoja, no solo el id: es lo que
+   * cualquiera copia de la barra del navegador, y pedirle a alguien que
+   * recorte el tramo del medio a mano es una forma segura de que pegue
+   * mal la mitad de las veces.
+   */
+  const setSpreadsheetId = (value: string) => {
+    const fromUrl = value.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const id = (fromUrl ? fromUrl[1] : value).trim();
+    onChange({ ...inventory, enabled, spreadsheetId: id || undefined });
+  };
+
   const setPhone = (value: string) => {
     const digits = onlyDigits(value);
     onChange({ ...inventory, enabled, whatsappPhone: digits || undefined });
@@ -98,6 +110,27 @@ export default function InventorySettings({ inventory, onChange }: InventorySett
               Todo lo demás del inventario funciona igual.
             </p>
           )}
+        </div>
+      )}
+
+      {enabled && (
+        <div className="admin-field-group">
+          <h4>Hoja de Google</h4>
+          <div className="admin-field">
+            <label htmlFor="inv-sheet">Identificador de la hoja</label>
+            <input
+              id="inv-sheet"
+              type="text"
+              placeholder="ej. 1AbCdEfGh…"
+              value={inventory?.spreadsheetId ?? ""}
+              onChange={(e) => setSpreadsheetId(e.target.value)}
+            />
+            <p className="admin-field-hint">
+              Es el tramo largo de la dirección de la hoja, entre <code>/d/</code> y <code>/edit</code>. La hoja
+              tiene que estar compartida como <strong>Editor</strong> con la cuenta de servicio. Las tres
+              pestañas (PRODUCTOS, KARDEX, CONFIGURACION) las crea el sistema solo.
+            </p>
+          </div>
         </div>
       )}
     </div>

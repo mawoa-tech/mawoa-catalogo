@@ -12,6 +12,14 @@ type SwatchesEditorProps = {
   pageId?: string;
   /** El modelo entero está marcado como agotado: pisa el estado de cada uno de sus colores. */
   pageSoldOut?: boolean;
+  /**
+   * El modelo declara tallas y/o cortes. En ese caso el stock ya no es
+   * del color sino de la combinación (se carga en la grilla de
+   * VariantsEditor) y acá queda solo el precio, que sí sigue siendo del
+   * color. Mostrar los dos lugares a la vez sería ofrecer dos campos
+   * para el mismo número, y uno de ellos no se usaría.
+   */
+  dimensioned?: boolean;
 };
 
 const STATUS_LABEL: Record<StockStatus, string> = {
@@ -31,6 +39,7 @@ export default function SwatchesEditor({
   onChange,
   pageId = "",
   pageSoldOut = false,
+  dimensioned = false,
 }: SwatchesEditorProps) {
   const { enabled: inventoryEnabled, skuOf } = useInventory();
 
@@ -157,42 +166,56 @@ export default function SwatchesEditor({
                           }
                         />
                       </label>
-                      <label className="admin-mini-field">
-                        <span>Stock</span>
-                        <input
-                          type="number"
-                          step="1"
-                          value={swatch.inventory.stock}
-                          onChange={(e) => setInventory(i, { stock: toNumber(e.target.value) })}
-                        />
-                      </label>
-                      <label className="admin-mini-field">
-                        <span>Mínimo</span>
-                        <input
-                          type="number"
-                          min={0}
-                          step="1"
-                          value={swatch.inventory.minStock}
-                          onChange={(e) => setInventory(i, { minStock: Math.max(0, toNumber(e.target.value)) })}
-                        />
-                      </label>
-                      {status && (
-                        <span className={`admin-stock-pill ${STATUS_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+                      {dimensioned ? (
+                        <span className="admin-field-hint">
+                          El stock de este color se carga por talla y corte, abajo.
+                        </span>
+                      ) : (
+                        <>
+                          <label className="admin-mini-field">
+                            <span>Stock</span>
+                            <input
+                              type="number"
+                              step="1"
+                              value={swatch.inventory.stock}
+                              onChange={(e) => setInventory(i, { stock: toNumber(e.target.value) })}
+                            />
+                          </label>
+                          <label className="admin-mini-field">
+                            <span>Mínimo</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step="1"
+                              value={swatch.inventory.minStock}
+                              onChange={(e) => setInventory(i, { minStock: Math.max(0, toNumber(e.target.value)) })}
+                            />
+                          </label>
+                          {status && (
+                            <span className={`admin-stock-pill ${STATUS_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+                          )}
+                        </>
                       )}
                       <button
                         type="button"
                         className="admin-btn"
                         onClick={() => stopInventory(i)}
-                        title="Deja de controlar el stock de este color (no borra el color)"
+                        title={
+                          dimensioned
+                            ? "Quita el precio de este color (el stock vive en la grilla de abajo)"
+                            : "Deja de controlar el stock de este color (no borra el color)"
+                        }
                       >
-                        Quitar stock
+                        {dimensioned ? "Quitar precio" : "Quitar stock"}
                       </button>
                     </>
                   ) : (
                     <>
-                      <span className="admin-stock-pill none">Sin stock cargado</span>
+                      <span className="admin-stock-pill none">
+                        {dimensioned ? "Sin precio cargado" : "Sin stock cargado"}
+                      </span>
                       <button type="button" className="admin-btn" onClick={() => startInventory(i)}>
-                        Cargar stock
+                        {dimensioned ? "Cargar precio" : "Cargar stock"}
                       </button>
                     </>
                   )}
@@ -207,8 +230,10 @@ export default function SwatchesEditor({
       </div>
       {inventoryEnabled && (
         <p className="admin-field-hint">
-          El código (SKU) se arma solo con el nombre del modelo y el del color. &ldquo;Mínimo&rdquo; es a partir de
-          cuántas unidades avisar que quedan pocas.
+          El código (SKU) se arma solo con el nombre del modelo y el del color.{" "}
+          {dimensioned
+            ? "Como este modelo tiene tallas o cortes, acá va solo el precio: las unidades se cargan en la grilla de abajo."
+            : "“Mínimo” es a partir de cuántas unidades avisar que quedan pocas."}
         </p>
       )}
     </div>

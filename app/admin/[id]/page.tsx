@@ -68,7 +68,10 @@ async function withLiveStock(catalogId: string, blocks: Block[]): Promise<Block[
   // corresponde exactamente a la fila que se va a sincronizar.
   const skuBySlot = new Map<string, string>();
   for (const variant of catalogVariants(blocks)) {
-    skuBySlot.set(`${variant.pageId}\u0000${variant.swatchIndex}`, variant.sku);
+    // La primera combinación del color (ver CatalogRenderer): con tallas
+    // o cortes hay varias por color y este mapa es el del SKU base.
+    const key = `${variant.pageId}\u0000${variant.swatchIndex}`;
+    if (!skuBySlot.has(key)) skuBySlot.set(key, variant.sku);
   }
 
   return blocks.map((block) => {

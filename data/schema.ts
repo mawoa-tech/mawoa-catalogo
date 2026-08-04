@@ -103,27 +103,43 @@ function skuToken(value: string): string {
     .replace(/[^A-Z0-9]/g, "");
 }
 
+/** Las coordenadas de una variante: siempre un color, y opcionalmente talla y corte. */
+export type VariantCoords = {
+  model: string;
+  color: string;
+  size?: string;
+  cut?: string;
+};
+
 /**
- * SKU de una variante: `MODELO-COL` (ej. `MODELOA-NEG`).
+ * SKU de una variante: `MODELO-COL[-TAL][-COR]` (ej. `MODELOA-NEG`,
+ * `MODELOA-NEG-S-HIL`).
  *
- * Se DERIVA del nombre del modelo y del color en vez de guardarse, así
- * nadie tiene que escribirlo y no puede quedar viejo respecto al
- * contenido. La contrapartida, asumida: renombrar el modelo o el color
- * cambia el SKU. Nada más lo mueve — reordenar páginas, agregar modelos
- * o borrar otros colores lo dejan igual (por eso el número de página no
- * forma parte del código).
+ * Se DERIVA de las coordenadas en vez de guardarse, así nadie tiene que
+ * escribirlo y no puede quedar viejo respecto al contenido. La
+ * contrapartida, asumida: renombrar el modelo, el color, la talla o el
+ * corte cambia el SKU. Nada más lo mueve — reordenar páginas, agregar
+ * modelos o borrar otros colores lo dejan igual (por eso el número de
+ * página no forma parte del código).
  *
- * `taken` son los SKU ya asignados en el mismo catálogo: si dos colores
+ * Las partes opcionales se omiten cuando no existen, así un modelo sin
+ * tallas ni cortes conserva EXACTAMENTE el mismo SKU que antes de que
+ * estas dimensiones existieran — que es lo que evita que el contenido
+ * ya publicado cambie de identidad al actualizar el sistema.
+ *
+ * `taken` son los SKU ya asignados en el mismo catálogo: si dos valores
  * distintos abrevian igual ("Negro" y "Negra" → NEG), el segundo recibe
  * un sufijo correlativo en vez de pisar al primero. Con el recorrido en
  * orden de documento (ver `catalogVariants`) el resultado es siempre el
  * mismo para el mismo contenido, que es lo que hace idempotente la
  * sincronización con la hoja.
  */
-export function variantSku(modelName: string, colorLabel: string, taken?: Iterable<string>): string {
-  const model = skuToken(modelName) || "MODELO";
-  const color = skuToken(colorLabel).slice(0, 3) || "COL";
-  const base = `${model}-${color}`;
+export function variantSku(coords: VariantCoords, taken?: Iterable<string>): string {
+  const model = skuToken(coords.model) || "MODELO";
+  const parts = [model, skuToken(coords.color).slice(0, 3) || "COL"];
+  if (coords.size !== undefined) parts.push(skuToken(coords.size).slice(0, 3) || "TAL");
+  if (coords.cut !== undefined) parts.push(skuToken(coords.cut).slice(0, 3) || "COR");
+  const base = parts.join("-");
 
   const used = new Set(taken ?? []);
   if (!used.has(base)) return base;
@@ -172,6 +188,17 @@ export const CollageImageSchema = z.object({
   alt: z.string(),
 });
 export type CollageImage = z.infer<typeof CollageImageSchema>;
+
+/**
+ * Un corte del modelo (hilo, semihilo, tanga…). Lleva imagen porque es
+ * una decisión visual: nadie elige "semihilo" leyendo la palabra, lo
+ * elige viendo la forma.
+ */
+export const CutSchema = z.object({
+  label: z.string().min(1),
+  image: z.string(),
+});
+export type Cut = z.infer<typeof CutSchema>;
 
 /**
  * Colores puestos a mano sobre un texto puntual de la página, desde la
@@ -253,11 +280,48 @@ export const ProductVariantSchema = z.object({
   collageLayout: CollageLayoutSchema,
   collageImages: z.array(CollageImageSchema),
   swatches: z.array(SwatchItemSchema),
+  /**
+   * Tallas del modelo, si las tiene (`["XS","S","M","L"]`, o
+   * `["Standard"]` cuando es talla única). Son del modelo y no del
+   * color: en la práctica un mismo modelo se fabrica en las mismas
+   * tallas para todos sus colores, y tenerlas por color multiplicaría
+   * el trabajo de carga sin representar nada real.
+   */
+  sizes: z.array(z.string().min(1)).optional(),
+  /**
+   * Cortes del modelo, con su propia imagen (hilo, semihilo, tanga…).
+   * A diferencia de la talla, el corte se ELIGE mirando: por eso lleva
+   * imagen y no es solo una etiqueta.
+   */
+  cuts: z.array(CutSchema).optional(),
+  /**
+   * Unidades por combinación, indexadas por SKU. Un número suelto y no
+   * un objeto: el precio es del color (vive en el swatch) y el mínimo
+   * es del modelo (acá abajo), así que lo único que varía combinación
+   * por combinación es la cantidad.
+   *
+   * Es el mapa que se sincroniza contra la hoja de Google, y por eso su
+   * clave es el SKU y no la posición: reordenar tallas o colores no
+   * tiene que mover ningún número.
+   */
+  stock: z.record(z.string(), z.number().int()).optional(),
+  /**
+   * "Últimas unidades" a partir de acá, para todas las combinaciones
+   * del modelo. Uno por modelo y no uno por combinación: nadie va a
+   * definir 36 mínimos distintos, y tenerlos repetidos solo agrega
+   * lugares donde se puede desincronizar.
+   */
+  minStock: z.number().int().nonnegative().optional(),
   /** El modelo entero está agotado (ver `SwatchItemSchema`). */
   soldOut: z.boolean().optional(),
   textColors: TextColorsSchema,
 });
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
+
+/** Un modelo usa el esquema nuevo (stock por combinación) en cuanto declara alguna dimensión. */
+export function hasVariantDimensions(data: ProductVariant): boolean {
+  return (data.sizes?.length ?? 0) > 0 || (data.cuts?.length ?? 0) > 0;
+}
 
 export const ClosingDataSchema = z.object({
   title: z.string(),
@@ -379,6 +443,9 @@ export type CatalogVariant = {
   swatchIndex: number;
   model: string;
   color: string;
+  /** Presentes solo si el modelo declara esa dimensión. */
+  size?: string;
+  cut?: string;
   sku: string;
   inventory?: VariantInventory;
   /** Marcado a mano como agotado, independientemente del stock (ver `soldOut` en el swatch). */
@@ -401,22 +468,60 @@ export function catalogVariants(blocks: CatalogBlocks): CatalogVariant[] {
 
   for (const block of blocks) {
     if (block.type !== "productDetail") continue;
-    block.data.swatches.forEach((swatch, swatchIndex) => {
-      const sku = variantSku(block.data.name, swatch.label, taken);
-      taken.add(sku);
-      variants.push({
-        pageId: block.data.id,
-        swatchIndex,
-        model: block.data.name,
-        color: swatch.label,
-        sku,
-        inventory: swatch.inventory,
-        // El modelo entero agotado también agota cada uno de sus colores
-        // — es la misma regla que ya aplica components/catalog/soldOut.ts
-        // para pintar la página, dicha una vez más acá porque el
-        // inventario razona por variante, no por página.
-        soldOut: swatch.soldOut === true || block.data.soldOut === true,
-      });
+    const data = block.data;
+    const dimensioned = hasVariantDimensions(data);
+
+    // `[undefined]` y no `[]` cuando la dimensión no existe: así el
+    // producto cartesiano da una sola vuelta por esa dimensión en vez
+    // de ninguna, y un modelo sin tallas ni cortes produce exactamente
+    // una variante por color — el comportamiento que ya tenía.
+    const sizes: (string | undefined)[] = data.sizes?.length ? data.sizes : [undefined];
+    const cuts: (string | undefined)[] = data.cuts?.length ? data.cuts.map((c) => c.label) : [undefined];
+
+    data.swatches.forEach((swatch, swatchIndex) => {
+      for (const size of sizes) {
+        for (const cut of cuts) {
+          const sku = variantSku({ model: data.name, color: swatch.label, size, cut }, taken);
+          taken.add(sku);
+
+          // De dónde sale el inventario según el esquema que use el
+          // modelo. Con dimensiones: la cantidad del mapa por SKU, el
+          // mínimo del modelo y el precio del color. Sin dimensiones:
+          // el bloque que ya vivía colgado del color, intacto — es lo
+          // que hace que el contenido publicado siga leyéndose igual
+          // sin migrar nada.
+          let inventory: VariantInventory | undefined;
+          if (dimensioned) {
+            const units = data.stock?.[sku];
+            if (units !== undefined) {
+              inventory = {
+                stock: units,
+                minStock: data.minStock ?? 0,
+                price: swatch.inventory?.price,
+              };
+            }
+          } else {
+            inventory = swatch.inventory;
+          }
+
+          variants.push({
+            pageId: data.id,
+            swatchIndex,
+            model: data.name,
+            color: swatch.label,
+            size,
+            cut,
+            sku,
+            inventory,
+            // El modelo entero agotado también agota cada uno de sus
+            // colores — es la misma regla que ya aplica
+            // components/catalog/soldOut.ts para pintar la página,
+            // dicha una vez más acá porque el inventario razona por
+            // variante, no por página.
+            soldOut: swatch.soldOut === true || data.soldOut === true,
+          });
+        }
+      }
     });
   }
 

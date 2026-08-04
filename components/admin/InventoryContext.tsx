@@ -5,8 +5,13 @@ import { createContext, useContext, type ReactNode } from "react";
 type InventoryContextValue = {
   /** El catálogo tiene el control de stock encendido (ver InventorySettings). */
   enabled: boolean;
-  /** SKU ya resuelto de una variante, con las colisiones del catálogo entero ya desempatadas. */
-  skuOf: (pageId: string, swatchIndex: number) => string;
+  /**
+   * SKU ya resuelto de una variante, con las colisiones del catálogo
+   * entero ya desempatadas. Sin talla ni corte devuelve el de la
+   * primera combinación de ese color, que es el SKU del color a secas
+   * cuando el modelo no tiene dimensiones.
+   */
+  skuOf: (pageId: string, swatchIndex: number, size?: string, cut?: string) => string;
 };
 
 /**

@@ -3,7 +3,7 @@ import ScrollProgress from "./ScrollProgress";
 import ScrollReveal from "./ScrollReveal";
 import BlockRenderer from "./BlockRenderer";
 import { LiveStockProvider } from "./LiveStockContext";
-import { catalogVariants } from "@/data/schema";
+import { catalogVariants, type CatalogVariant } from "@/data/schema";
 import type { CatalogBlocks, CatalogInventory, CatalogTheme, LayoutId } from "@/data/schema";
 
 type CatalogRendererProps = {
@@ -93,7 +93,7 @@ export default function CatalogRenderer({
    * queden desempatados igual acá, en el panel y en la hoja de Google. La
    * clave es el índice del bloque, que es la identidad real de la página.
    */
-  const skusByBlock = new Map<number, string[]>();
+  const variantsByBlock = new Map<number, CatalogVariant[]>();
   if (inventory?.enabled) {
     const blockIndexById = new Map<string, number>();
     blocks.forEach((block, i) => {
@@ -104,9 +104,9 @@ export default function CatalogRenderer({
     for (const variant of catalogVariants(blocks)) {
       const i = blockIndexById.get(variant.pageId);
       if (i === undefined) continue;
-      const list = skusByBlock.get(i) ?? [];
-      list[variant.swatchIndex] = variant.sku;
-      skusByBlock.set(i, list);
+      const list = variantsByBlock.get(i) ?? [];
+      list.push(variant);
+      variantsByBlock.set(i, list);
     }
   }
 
@@ -128,7 +128,7 @@ export default function CatalogRenderer({
           layoutId={layoutId}
           pdfHref={pdfHref}
           inventory={inventory}
-          skus={skusByBlock.get(i)}
+          variants={variantsByBlock.get(i)}
         />
       ))}
       </LiveStockProvider>

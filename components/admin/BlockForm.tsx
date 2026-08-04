@@ -1,12 +1,13 @@
 "use client";
 
 import type { Block } from "@/data/schema";
-import { COLLAGE_LAYOUT_IMAGE_COUNT, deriveCollageLayout } from "@/data/schema";
+import { COLLAGE_LAYOUT_IMAGE_COUNT, deriveCollageLayout, hasVariantDimensions } from "@/data/schema";
 import TextField from "./fields/TextField";
 import TextAreaField from "./fields/TextAreaField";
 import StringListEditor from "./fields/StringListEditor";
 import CollageImagesEditor from "./fields/CollageImagesEditor";
 import SwatchesEditor from "./fields/SwatchesEditor";
+import VariantsEditor from "./fields/VariantsEditor";
 import CheckboxField from "./fields/CheckboxField";
 import ImagePicker from "./ImagePicker";
 
@@ -123,7 +124,12 @@ export default function BlockForm({ block, onChange }: BlockFormProps) {
               onChange={(v) => set({ swatches: v })}
               pageId={data.id}
               pageSoldOut={data.soldOut === true}
+              dimensioned={hasVariantDimensions(data)}
             />
+          </div>
+          <div className="admin-field-group">
+            <h4>Tallas y cortes</h4>
+            <VariantsEditor data={data} onChange={set} />
           </div>
         </>
       );

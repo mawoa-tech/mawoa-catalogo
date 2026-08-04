@@ -2348,3 +2348,255 @@
 .admin-cloud-overlay {
   z-index: 1100;
 }
+
+/* --- Tallas, cortes y stock por combinación (Fase 2) ------------------
+   La grilla existe porque el stock vive en la combinación color × talla
+   × corte: un modelo con 3 colores, 4 tallas y 3 cortes son 36 números,
+   y una lista de 36 filas es imposible de completar sin perderse. */
+.admin-variants {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-variant-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  padding: 2px 4px 2px 10px;
+  background: #fafafa;
+}
+
+/* Gana por especificidad a la regla ancha de .admin-field input[type=text]:
+   una talla es una etiqueta corta ("M"), no un campo de formulario, y
+   con el ancho completo cada una ocupaba una fila entera del panel. */
+.admin-chips .admin-chip input[type="text"] {
+  width: 52px;
+  border: none;
+  background: none;
+  font: inherit;
+  padding: 4px 0;
+  text-align: center;
+}
+
+.admin-chip input:focus {
+  outline: none;
+}
+
+.admin-chip button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #888;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 6px;
+}
+
+/* Apilada y no en una fila: el panel mide ~440px y el nombre del corte
+   más el selector de imagen no entran uno al lado del otro sin que el
+   campo de la ruta quede reducido a tres caracteres. */
+.admin-cut-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  position: relative;
+}
+
+.admin-cut-row > input[type="text"] {
+  width: 100%;
+  padding-right: 34px;
+}
+
+.admin-cut-row > .admin-btn-danger {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.admin-stock-grid {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.admin-stock-grid-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.admin-stock-grid-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+}
+
+/* Con muchas tallas o cortes la tabla puede no entrar: scrollea ella,
+   nunca el panel entero (misma regla que el resto del admin). */
+.admin-stock-grid-scroll {
+  overflow-x: auto;
+}
+
+.admin-stock-grid table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-stock-grid th {
+  font-weight: 600;
+  color: #666;
+  padding: 4px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-stock-grid th[scope="row"] {
+  text-align: right;
+}
+
+.admin-stock-grid td {
+  padding: 2px;
+}
+
+.admin-stock-grid input {
+  width: 64px;
+  padding: 6px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font: inherit;
+}
+
+/* El color del borde dice el estado de esa celda: es lo que convierte la
+   grilla en algo que se lee de un vistazo ("¿qué falta reponer?"). */
+.admin-stock-grid input.is-available {
+  border-color: #2e7d32;
+}
+
+.admin-stock-grid input.is-low_stock {
+  border-color: #ed6c02;
+  background: #fff8f0;
+}
+
+.admin-stock-grid input.is-out_of_stock {
+  border-color: #c62828;
+  background: #fff5f5;
+}
+
+/* --- Panel de inventario: resumen, sincronización y Kardex ----------- */
+.admin-inv-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-inv-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #f4f4f4;
+  color: #555;
+}
+
+.admin-inv-count strong {
+  font-size: 15px;
+}
+
+.admin-inv-count.is-available {
+  background: #eaf5ec;
+  color: #1f6b32;
+}
+
+.admin-inv-count.is-low {
+  background: #fdf3e3;
+  color: #96660c;
+}
+
+.admin-inv-count.is-out {
+  background: #fdeaea;
+  color: #8f2020;
+}
+
+.admin-inv-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.admin-inv-actions input[type="search"] {
+  flex: 1;
+  min-width: 160px;
+  padding: 8px 9px;
+  border: 1px solid #d5d5d0;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.admin-inv-kardex {
+  margin-top: 14px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+/* La tabla scrollea sola: el panel nunca scrollea en horizontal. */
+.admin-inv-kardex-scroll {
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.admin-inv-kardex-scroll table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.admin-inv-kardex-scroll th {
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.admin-inv-kardex-scroll td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #f2f2f2;
+  white-space: nowrap;
+}

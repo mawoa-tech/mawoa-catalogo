@@ -765,6 +765,131 @@ a {
   padding-bottom: 68px;
 }
 
+/* Con tallas o cortes la barra crece, y el espacio reservado TIENE que
+   crecer igual: son los dos números que el comentario de arriba dice
+   que no pueden desincronizarse. Se resuelve con `:has` en vez de con
+   JavaScript, así sigue valiendo para las 10 plantillas sin tocar
+   ninguna. Los tres casos son los tres altos reales de la barra. */
+.buy-bar:has(.buy-bar-sizes) {
+  --buy-bar-h: 116px;
+}
+
+.buy-bar:has(.buy-bar-cuts) {
+  --buy-bar-h: 184px;
+}
+
+.page:has(> .buy-bar .buy-bar-sizes) {
+  padding-bottom: 116px;
+}
+
+.page:has(> .buy-bar .buy-bar-cuts) {
+  /* Medido sobre la barra real (miniatura de 44px + nombre + la fila de
+     tallas + la fila de compra), no estimado: con 152px la barra tapaba
+     ~26px del contenido de la página. */
+  padding-bottom: 184px;
+}
+
+/* Con opciones la barra deja de ser una sola fila. */
+.buy-bar:has(.buy-bar-options) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.buy-bar-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.buy-bar-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Scroll horizontal propio: con muchas tallas o cortes la fila se
+   desplaza sola en vez de agrandar la barra, que es lo que rompería el
+   calce con el espacio reservado arriba. */
+.buy-bar-sizes,
+.buy-bar-cuts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.buy-bar-sizes::-webkit-scrollbar,
+.buy-bar-cuts::-webkit-scrollbar {
+  display: none;
+}
+
+.buy-bar-size {
+  flex: 0 0 auto;
+  min-width: 38px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--paper) 45%, transparent);
+  border-radius: 100px;
+  background: none;
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.buy-bar-size.selected {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Agotado se muestra, no se esconde: que la talla exista y no esté
+   disponible es información para quien compra. La línea cruzada dice lo
+   mismo que la opacidad, para no depender de distinguir un gris de otro. */
+.buy-bar-size.is-out,
+.buy-bar-cut.is-out {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.buy-bar-cut {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.buy-bar-cut img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.buy-bar-cut.selected {
+  border-color: var(--paper);
+}
+
 .buy-bar-info {
   display: flex;
   align-items: baseline;
@@ -865,6 +990,15 @@ a {
 @media print {
   .buy-bar {
     display: none !important;
+  }
+
+  /* Y también hay que devolver el espacio que la barra tenía reservado:
+     escondiéndola sola, el PDF quedaba con hasta 184px de hueco al pie
+     de cada página de producto. */
+  .page:has(> .buy-bar),
+  .page:has(> .buy-bar .buy-bar-sizes),
+  .page:has(> .buy-bar .buy-bar-cuts) {
+    padding-bottom: 0 !important;
   }
 }
 

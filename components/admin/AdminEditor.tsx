@@ -10,6 +10,7 @@ import AdminPanel from "./AdminPanel";
 import AssetGallery from "./AssetGallery";
 import Glossary from "./Glossary";
 import InventorySettings from "./InventorySettings";
+import InventoryPanel from "./InventoryPanel";
 import { InventoryProvider } from "./InventoryContext";
 import ThemeEditor from "./fields/ThemeEditor";
 import { useToast } from "./ToastContext";
@@ -197,12 +198,20 @@ export default function AdminEditor({
     const bySlot = new Map<string, string>();
     if (enabled) {
       for (const variant of catalogVariants(items.map((item) => item.block))) {
-        bySlot.set(`${variant.pageId}\u0000${variant.swatchIndex}`, variant.sku);
+        // Dos claves por variante: la completa (color+talla+corte), que
+        // es la que usa la grilla de stock, y la del color a secas, que
+        // es la que pide el editor de colores. La del color se queda
+        // con la PRIMERA combinación, no la última.
+        const full = `${variant.pageId}\u0000${variant.swatchIndex}\u0000${variant.size ?? ""}\u0000${variant.cut ?? ""}`;
+        bySlot.set(full, variant.sku);
+        const base = `${variant.pageId}\u0000${variant.swatchIndex}\u0000\u0000`;
+        if (!bySlot.has(base)) bySlot.set(base, variant.sku);
       }
     }
     return {
       enabled,
-      skuOf: (pageId: string, swatchIndex: number) => bySlot.get(`${pageId}\u0000${swatchIndex}`) ?? "",
+      skuOf: (pageId: string, swatchIndex: number, size?: string, cut?: string) =>
+        bySlot.get(`${pageId}\u0000${swatchIndex}\u0000${size ?? ""}\u0000${cut ?? ""}`) ?? "",
     };
   }, [inventory?.enabled, items]);
 
@@ -284,7 +293,16 @@ export default function AdminEditor({
 
         {tab === "colores" && <ThemeEditor theme={theme} onChange={setTheme} />}
 
-        {tab === "inventario" && <InventorySettings inventory={inventory} onChange={setInventory} />}
+        {tab === "inventario" && (
+          <>
+            <InventorySettings inventory={inventory} onChange={setInventory} />
+            <InventoryPanel
+              catalogId={catalogId}
+              inventory={inventory}
+              blocks={items.map((item) => item.block)}
+            />
+          </>
+        )}
 
         {tab === "ayuda" && <Glossary />}
       </div>

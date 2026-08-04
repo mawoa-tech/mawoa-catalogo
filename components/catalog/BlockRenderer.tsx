@@ -1,6 +1,6 @@
 import { LAYOUTS } from "./layouts";
 import { VariantProvider } from "./VariantContext";
-import type { Block, CatalogInventory, LayoutId } from "@/data/schema";
+import type { Block, CatalogInventory, CatalogVariant, LayoutId } from "@/data/schema";
 
 type BlockRendererProps = {
   block: Block;
@@ -11,7 +11,8 @@ type BlockRendererProps = {
   /** Control de stock del catálogo. Ausente = el catálogo no lo usa y nada cambia. */
   inventory?: CatalogInventory;
   /** SKU de los colores de este bloque, si es una página de producto (ver CatalogRenderer). */
-  skus?: string[];
+  /** Todas las combinaciones (color × talla × corte) de esta página, ya resueltas sobre el catálogo entero. */
+  variants?: CatalogVariant[];
 };
 
 /**
@@ -21,7 +22,7 @@ type BlockRendererProps = {
  * nuevo sin manejarlo acá sea un error de compilación, no un bug
  * silencioso en producción.
  */
-export default function BlockRenderer({ block, layoutId, pdfHref, inventory, skus }: BlockRendererProps) {
+export default function BlockRenderer({ block, layoutId, pdfHref, inventory, variants }: BlockRendererProps) {
   const L = LAYOUTS[layoutId];
   switch (block.type) {
     case "cover":
@@ -37,7 +38,7 @@ export default function BlockRenderer({ block, layoutId, pdfHref, inventory, sku
       // lugar por el que pasan las 10, así que ninguna necesita saber
       // que el inventario existe (ni las que se agreguen después).
       return (
-        <VariantProvider variant={block.data} inventory={inventory} skus={skus}>
+        <VariantProvider variant={block.data} inventory={inventory} variants={variants}>
           <L.ProductDetailPage variant={block.data} />
         </VariantProvider>
       );
